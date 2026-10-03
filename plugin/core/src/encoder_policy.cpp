@@ -8,7 +8,7 @@
 namespace airplay {
 namespace {
 
-enum class Family { Nvenc, Amf, Qsv, X264, Generic };
+enum class Family { Nvenc, Amf, Qsv, VideoToolbox, Vaapi, X264, Generic };
 
 bool starts_with(const std::string &s, const char *prefix)
 {
@@ -23,6 +23,11 @@ Family family_of(const std::string &id)
 		return Family::Amf;
 	if (starts_with(id, "obs_qsv11"))
 		return Family::Qsv;
+	// mac-videotoolbox registers each encoder under its VideoToolbox encoder ID.
+	if (starts_with(id, "com.apple.videotoolbox.videoencoder."))
+		return Family::VideoToolbox;
+	if (id == "ffmpeg_vaapi_tex" || id == "ffmpeg_vaapi")
+		return Family::Vaapi;
 	if (id == "obs_x264")
 		return Family::X264;
 	return Family::Generic;
@@ -32,8 +37,17 @@ Family family_of(const std::string &id)
 
 const std::vector<std::string> &encoder_fallback_order()
 {
-	static const std::vector<std::string> order{"obs_nvenc_h264_tex", "h264_texture_amf", "obs_qsv11_v2",
-						      "obs_x264"};
+	// VideoToolbox IDs come from VTCopyVideoEncoderList: ave.avc is the Apple
+	// Silicon hardware encoder, h264.gva the Intel Mac one. The software
+	// VideoToolbox encoder (...videoencoder.h264) is left out: x264 with
+	// zerolatency is the tested software path. ffmpeg_vaapi_tex is Linux.
+	static const std::vector<std::string> order{"obs_nvenc_h264_tex",
+						    "h264_texture_amf",
+						    "obs_qsv11_v2",
+						    "com.apple.videotoolbox.videoencoder.ave.avc",
+						    "com.apple.videotoolbox.videoencoder.h264.gva",
+						    "ffmpeg_vaapi_tex",
+						    "obs_x264"};
 	return order;
 }
 
@@ -120,7 +134,9 @@ EncoderSettings encoder_settings(const std::string &encoder_id, int bitrate_kbps
 	// families reconfigure without an IDR, so they keep a 1 s interval.
 	add_int("keyint_sec", family_of(encoder_id) == Family::Nvenc ? kNvencKeyintSec : 1);
 	add_bool("repeat_headers", true);
-	add_str("profile", "high");
+	// obs-ffmpeg-vaapi reads "profile" as FFmpeg's integer profile; set below.
+	if (family_of(encoder_id) != Family::Vaapi)
+		add_str("profile", "high");
 
 	switch (family_of(encoder_id)) {
 	case Family::Nvenc:
@@ -144,6 +160,20 @@ EncoderSettings encoder_settings(const std::string &encoder_id, int bitrate_kbps
 		add_int("bf", 0);
 		add_str("target_usage", "TU4");
 		add_str("latency", "low");
+		break;
+	case Family::VideoToolbox:
+		// mac-videotoolbox drops to ABR (with a log warning) where CBR is
+		// unsupported: Intel Macs and macOS before 13. The cap applies only
+		// to that ABR fallback. It sets RealTime off itself; nothing to tune.
+		add_str("rate_control", "CBR");
+		add_bool("limit_bitrate", true);
+		add_int("max_bitrate", kbps);
+		add_bool("bframes", false); // a bool here (frame reordering), unlike QSV's int
+		break;
+	case Family::Vaapi:
+		add_str("rate_control", "CBR");
+		add_int("bf", 0);
+		add_int("profile", 100); // AV_PROFILE_H264_HIGH
 		break;
 	case Family::X264:
 		add_str("rate_control", "CBR");

@@ -37,10 +37,38 @@ bool flag(const EncoderSettings &s, const std::string &key)
 }
 } // namespace
 
-TEST_CASE("fallback order is NVENC, AMF, QSV, x264")
+TEST_CASE("fallback order is NVENC, AMF, QSV, VideoToolbox, VAAPI, x264")
 {
 	CHECK(encoder_fallback_order() ==
-	      std::vector<std::string>{"obs_nvenc_h264_tex", "h264_texture_amf", "obs_qsv11_v2", "obs_x264"});
+	      std::vector<std::string>{"obs_nvenc_h264_tex", "h264_texture_amf", "obs_qsv11_v2",
+				       "com.apple.videotoolbox.videoencoder.ave.avc",
+				       "com.apple.videotoolbox.videoencoder.h264.gva", "ffmpeg_vaapi_tex", "obs_x264"});
+}
+
+TEST_CASE("macOS: hardware VideoToolbox goes ahead of x264; software VideoToolbox is not chosen")
+{
+	// What OBS 32.2.2 registers for H.264 on an Apple Silicon Mac (macOS 26.6.2, 2026-10-03).
+	const std::vector<std::string> apple_silicon{"com.apple.videotoolbox.videoencoder.ave.avc",
+						     "com.apple.videotoolbox.videoencoder.h264", "obs_x264"};
+	CHECK(plan_encoders(apple_silicon, "").candidates ==
+	      std::vector<std::string>{"com.apple.videotoolbox.videoencoder.ave.avc", "obs_x264"});
+	const std::vector<std::string> intel_mac{"obs_x264", "com.apple.videotoolbox.videoencoder.h264",
+						 "com.apple.videotoolbox.videoencoder.h264.gva"};
+	CHECK(plan_encoders(intel_mac, "").candidates ==
+	      std::vector<std::string>{"com.apple.videotoolbox.videoencoder.h264.gva", "obs_x264"});
+	// The software encoder is still reachable as an explicit override.
+	CHECK(plan_encoders(apple_silicon, "com.apple.videotoolbox.videoencoder.h264").candidates ==
+	      std::vector<std::string>{"com.apple.videotoolbox.videoencoder.h264",
+				       "com.apple.videotoolbox.videoencoder.ave.avc", "obs_x264"});
+}
+
+TEST_CASE("Linux: NVENC, then QSV, then VAAPI, then x264")
+{
+	const std::vector<std::string> available{"obs_x264", "ffmpeg_vaapi_tex", "obs_nvenc_h264_tex"};
+	CHECK(plan_encoders(available, "").candidates ==
+	      std::vector<std::string>{"obs_nvenc_h264_tex", "ffmpeg_vaapi_tex", "obs_x264"});
+	CHECK(plan_encoders({"obs_x264", "ffmpeg_vaapi_tex"}, "").candidates ==
+	      std::vector<std::string>{"ffmpeg_vaapi_tex", "obs_x264"});
 }
 
 TEST_CASE("plan keeps only available encoders, in order")
@@ -158,10 +186,49 @@ TEST_CASE("AMF, x264 and generic settings")
 	CHECK(find(s, "tune") == nullptr);
 }
 
+TEST_CASE("VideoToolbox settings: CBR, bool bframes off, 1 s keyframes, high profile")
+{
+	for (const char *id :
+	     {"com.apple.videotoolbox.videoencoder.ave.avc", "com.apple.videotoolbox.videoencoder.h264.gva",
+	      "com.apple.videotoolbox.videoencoder.h264"}) {
+		CAPTURE(id);
+		const EncoderSettings s = encoder_settings(id, 6000);
+		CHECK(num(s, "bitrate") == 6000);
+		// mac-videotoolbox reads "CBR" (uppercase) and falls back to ABR itself
+		// where CBR is unsupported (Intel, or macOS before 13).
+		CHECK(str(s, "rate_control") == "CBR");
+		// The ABR fallback honors a cap; CBR ignores it.
+		CHECK(flag(s, "limit_bitrate"));
+		CHECK(num(s, "max_bitrate") == 6000);
+		// mac-videotoolbox reads "bframes" as a bool (frame reordering), not an int.
+		CHECK_FALSE(flag(s, "bframes"));
+		CHECK(find(s, "bf") == nullptr);
+		CHECK(num(s, "keyint_sec") == 1);
+		CHECK(str(s, "profile") == "high");
+	}
+}
+
+TEST_CASE("VAAPI settings: CBR, no B-frames, integer High profile")
+{
+	const EncoderSettings s = encoder_settings("ffmpeg_vaapi_tex", 8000);
+	CHECK(num(s, "bitrate") == 8000);
+	CHECK(str(s, "rate_control") == "CBR");
+	CHECK(num(s, "bf") == 0);
+	CHECK(num(s, "keyint_sec") == 1);
+	// obs-ffmpeg-vaapi reads "profile" as an int (FFmpeg's AV_PROFILE_H264_HIGH = 100).
+	CHECK(num(s, "profile") == 100);
+	int profiles = 0;
+	for (const auto &kv : s)
+		profiles += kv.first == "profile";
+	CHECK(profiles == 1);
+}
+
 TEST_CASE("keyint: long GOP only where a live update forces an IDR (obs-nvenc)")
 {
 	CHECK(num(encoder_settings("obs_nvenc_hevc_tex", 8000), "keyint_sec") == 10);
 	CHECK(num(encoder_settings("obs_x264", 8000), "keyint_sec") == 1);
 	CHECK(num(encoder_settings("obs_qsv11_v2", 8000), "keyint_sec") == 1);
 	CHECK(num(encoder_settings("h264_texture_amf", 8000), "keyint_sec") == 1);
+	CHECK(num(encoder_settings("com.apple.videotoolbox.videoencoder.ave.avc", 8000), "keyint_sec") == 1);
+	CHECK(num(encoder_settings("ffmpeg_vaapi_tex", 8000), "keyint_sec") == 1);
 }

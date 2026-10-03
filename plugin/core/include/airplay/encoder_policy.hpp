@@ -14,7 +14,8 @@
 
 namespace airplay {
 
-// NVENC, then AMD AMF, then Intel Quick Sync, then x264 (OBS 32.2.2 IDs).
+// NVENC, then AMD AMF, then Intel Quick Sync, then Apple VideoToolbox
+// (hardware only), then VAAPI, then x264 (OBS 32.2.2 IDs).
 const std::vector<std::string> &encoder_fallback_order();
 
 struct EncoderPlan {
