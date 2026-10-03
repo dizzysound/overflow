@@ -1,6 +1,6 @@
 module doubletake
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/aead/chacha20poly1305 v0.0.0-20201124145622-1a5aba2a8b29
@@ -8,7 +8,7 @@ require (
 	github.com/grandcat/zeroconf v1.0.0
 	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/crypto v0.31.0
-	golang.org/x/sys v0.28.0
+	golang.org/x/sys v0.48.0
 	howett.net/plist v1.0.1
 )
 
