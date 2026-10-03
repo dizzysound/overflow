@@ -7,6 +7,7 @@
 
 #include "airplay/commands.hpp"
 #include "airplay/settings.hpp"
+#include "airplay/viewmodel.hpp"
 
 #include <cstdint>
 #include <map>
@@ -52,7 +53,14 @@ struct IdleInputs {
 	uint64_t now_ns = 0;
 	uint64_t last_activity_ns = 0;
 	uint64_t output_stopped_since_ns = 0;
+	std::string program_scene; // OBS's current program scene; empty when unknown
 };
+
+// True when the display is set to disconnect on this program scene.
+bool skipped_on_scene(const DisplaySettings &display, const std::string &scene);
+// Marks each enabled row skipped on the scene as "off on this scene" (gray).
+void mark_scene_skips(std::vector<DisplayRow> &rows, const Settings &settings, const std::string &scene);
+void mark_scene_skips(std::vector<DisplayGroup> &groups, const Settings &settings, const std::string &scene);
 
 bool display_wanted(const DisplaySettings &display, const IdleInputs &in);
 std::vector<DisplaySelection> selection_for(const Settings &settings, const IdleInputs &in,

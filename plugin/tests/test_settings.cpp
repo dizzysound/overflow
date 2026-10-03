@@ -474,3 +474,81 @@ TEST_CASE("settings: lead mode and saved lead round-trip; late floor migrates to
 	airplay::Settings odd = airplay::settings_from_json(R"({"version":1,"displays":[{"device_id":"AA","lead_mode":"turbo"}]})", &warning);
 	CHECK(odd.displays[0].lead_mode.empty());
 }
+
+TEST_CASE("skip_scenes round-trips, defaults empty, drops bad entries, and counts in operator==")
+{
+	Settings s;
+	s.ensure_display("A", "Narthex").skip_scenes = {"Narthex Wide", "Baptism"};
+	s.ensure_display("B", "Sacristy");
+	std::string warning;
+	const Settings back = settings_from_json(settings_to_json(s), &warning);
+	REQUIRE(back.displays.size() == 2);
+	CHECK(back.displays[0].skip_scenes == std::vector<std::string>{"Narthex Wide", "Baptism"});
+	CHECK(back.displays[1].skip_scenes.empty());
+	CHECK(back.displays[0] == s.displays[0]);
+
+	DisplaySettings other = s.displays[0];
+	other.skip_scenes.pop_back();
+	CHECK(other != s.displays[0]);
+
+	const std::string odd = R"({"version":1,"global":{},"displays":[
+		{"device_id":"A","skip_scenes":["Wide", 3, "", "Wide", "Pulpit"]},
+		{"device_id":"B","skip_scenes":"Wide"}
+	]})";
+	const Settings cleaned = settings_from_json(odd, &warning);
+	REQUIRE(cleaned.displays.size() == 2);
+	CHECK(cleaned.displays[0].skip_scenes == std::vector<std::string>{"Wide", "Pulpit"});
+	CHECK(cleaned.displays[1].skip_scenes.empty());
+}
+
+TEST_CASE("merge_dialog_fields copies every dialog field and keeps the rest")
+{
+	DisplaySettings target;
+	target.device_id = "AA:BB";
+	target.enabled = true;
+	target.password_protected = "keep-me";
+	target.saved_lead_ms = 210;
+	target.video_need_ms = 40;
+
+	DisplaySettings edited;
+	edited.device_id = "aa:bb";
+	edited.display_name = "Narthex";
+	edited.location = "Friendship Hall";
+	edited.enabled = false;
+	edited.auto_reconnect = false;
+	edited.audio_enabled = false;
+	edited.wifi_tolerant = true;
+	edited.latency_ms = 250;
+	edited.lead_mode = kLeadModeDynamic;
+	edited.audio_format = "aac-eld";
+	edited.volume_db = -6.0;
+	edited.manual_ip = "10.20.0.50";
+	edited.manual_port = 7100;
+	edited.idle_policy = IdlePolicy::StayConnected;
+	edited.idle_minutes = 5;
+	edited.skip_scenes = {"Narthex Wide"};
+	edited.password_protected = "";
+
+	merge_dialog_fields(target, edited);
+
+	CHECK(target.display_name == "Narthex");
+	CHECK(target.location == "Friendship Hall");
+	CHECK_FALSE(target.auto_reconnect);
+	CHECK_FALSE(target.audio_enabled);
+	CHECK(target.wifi_tolerant);
+	CHECK(target.latency_ms == 250);
+	CHECK(target.lead_mode == kLeadModeDynamic);
+	CHECK(target.audio_format == "aac-eld");
+	CHECK(target.volume_db == -6.0);
+	CHECK(target.manual_ip == "10.20.0.50");
+	CHECK(target.manual_port == 7100);
+	CHECK(target.idle_policy == IdlePolicy::StayConnected);
+	CHECK(target.idle_minutes == 5);
+	CHECK(target.skip_scenes == std::vector<std::string>{"Narthex Wide"});
+
+	CHECK(target.device_id == "AA:BB");
+	CHECK(target.enabled);
+	CHECK(target.password_protected == "keep-me");
+	CHECK(target.saved_lead_ms == 210);
+	CHECK(target.video_need_ms == 40);
+}

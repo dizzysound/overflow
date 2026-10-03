@@ -55,6 +55,23 @@ std::optional<double> get_volume(const json &j)
 	return v;
 }
 
+// Non-empty, distinct names, in saved order; anything else is dropped.
+std::vector<std::string> get_scene_names(const json &j)
+{
+	std::vector<std::string> out;
+	const auto it = j.find("skip_scenes");
+	if (it == j.end() || !it->is_array())
+		return out;
+	for (const json &v : *it) {
+		if (!v.is_string())
+			continue;
+		std::string name = v.get<std::string>();
+		if (!name.empty() && std::find(out.begin(), out.end(), name) == out.end())
+			out.push_back(std::move(name));
+	}
+	return out;
+}
+
 } // namespace
 
 const char *to_string(IdlePolicy p)
@@ -133,12 +150,30 @@ bool operator==(const DisplaySettings &a, const DisplaySettings &b)
 	       a.late_floor_ms == b.late_floor_ms && a.last_run_late_windows == b.last_run_late_windows &&
 	       a.volume_db == b.volume_db && a.manual_ip == b.manual_ip &&
 	       a.manual_port == b.manual_port && a.idle_policy == b.idle_policy && a.idle_minutes == b.idle_minutes &&
-	       a.password_protected == b.password_protected;
+	       a.password_protected == b.password_protected && a.skip_scenes == b.skip_scenes;
 }
 
 bool operator!=(const DisplaySettings &a, const DisplaySettings &b)
 {
 	return !(a == b);
+}
+
+void merge_dialog_fields(DisplaySettings &target, const DisplaySettings &edited)
+{
+	target.display_name = edited.display_name;
+	target.location = edited.location;
+	target.auto_reconnect = edited.auto_reconnect;
+	target.audio_enabled = edited.audio_enabled;
+	target.wifi_tolerant = edited.wifi_tolerant;
+	target.latency_ms = edited.latency_ms;
+	target.lead_mode = edited.lead_mode;
+	target.audio_format = edited.audio_format;
+	target.volume_db = edited.volume_db;
+	target.manual_ip = edited.manual_ip;
+	target.manual_port = edited.manual_port;
+	target.idle_policy = edited.idle_policy;
+	target.idle_minutes = edited.idle_minutes;
+	target.skip_scenes = edited.skip_scenes;
 }
 
 bool operator==(const GlobalSettings &a, const GlobalSettings &b)
@@ -237,6 +272,7 @@ std::string settings_to_json(const Settings &s)
 		e["idle_policy"] = to_string(r.idle_policy);
 		e["idle_minutes"] = r.idle_minutes;
 		e["password_protected"] = r.password_protected;
+		e["skip_scenes"] = r.skip_scenes;
 		displays.push_back(std::move(e));
 	}
 
@@ -316,6 +352,7 @@ Settings settings_from_json(const std::string &text, std::string *warning)
 			parse_idle_policy(get_str(e, "idle_policy"), &r.idle_policy);
 			r.idle_minutes = get_int(e, "idle_minutes", 30, 1, 1440);
 			r.password_protected = get_str(e, "password_protected");
+			r.skip_scenes = get_scene_names(e);
 			s.displays.push_back(std::move(r));
 		}
 	}

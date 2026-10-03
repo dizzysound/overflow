@@ -49,8 +49,14 @@ Overflow was called obs-airplay. To upgrade:
 - Right-click a display for **Restart** (a TV woken from standby with sound but no picture),
   **Reconnect**, **Display settings**, **Forget pairing** (clears the stored code and password
   only), and **Remove display** (deletes the display from the list entirely). The
-  **Display settings...** button opens the selected display's settings too. Changes there apply
-  when you click OK; a new TV delay, address, audio or Wi-Fi option reconnects that display once.
+  gear at the end of each display's row, the **Display settings...** button, or double-clicking a
+  display's status opens its settings too.
+  Changes there apply when you click OK; a new TV delay, address, audio or Wi-Fi option reconnects
+  that display once.
+- **Disconnect on these scenes** in Display settings stops AirPlay to that display while one of
+  the checked scenes is on program, for example a shot that shows the TV itself. Streaming and
+  recording carry on; the display reads "off on this scene" and reconnects when you switch to any
+  other scene, after a short reconnect. Scenes are matched by name, so check a renamed scene again.
 - Each display's line in the status area shows its TV delay and its audio trouble over the last
   minute: packets lost on the network (the TV asked for them again) and audio dropped late (it
   reached the sender too late for the TV delay). Lower a fixed TV delay while both stay at zero and

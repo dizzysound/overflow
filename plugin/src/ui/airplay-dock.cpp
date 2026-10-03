@@ -27,6 +27,7 @@
 #include <QScrollBar>
 #include <QStandardPaths>
 #include <QTextStream>
+#include <QToolButton>
 #include <QTreeWidget>
 #include <QVBoxLayout>
 
@@ -35,7 +36,10 @@
 
 namespace {
 
-enum Column { kName = 0, kStatus = 1, kAudio = 2 };
+enum Column { kName = 0, kStatus = 1, kAudio = 2, kSettings = 3 };
+
+constexpr int kMinDataColumn = 90; // Display, Status and Audio never shrink below this
+constexpr int kSettingsColumn = 34;
 
 // QAbstractItemView::state() is protected; the dock needs to know whether a
 // name is being edited so a refresh does not clobber it.
@@ -135,6 +139,25 @@ QTreeWidgetItem *make_display_item(const airplay::DisplayRow &row)
 	return item;
 }
 
+// OBS's own gear (its resources live in the OBS process; the theme's
+// icon-gear class restyles it). Outside OBS, as in the UI tests, a text gear.
+QToolButton *make_settings_button()
+{
+	auto *button = new QToolButton;
+	button->setObjectName(QStringLiteral("rowSettings"));
+	button->setAutoRaise(true);
+	button->setToolTip(QStringLiteral("Display settings"));
+	button->setAccessibleName(QStringLiteral("Display settings"));
+	const QString gear = QStringLiteral(":/settings/images/settings/general.svg");
+	if (QFile::exists(gear)) {
+		button->setIcon(QIcon(gear));
+		button->setProperty("class", QStringLiteral("icon-gear"));
+	} else {
+		button->setText(QString(QChar(0x2699)));
+	}
+	return button;
+}
+
 QString item_key(const QTreeWidgetItem *item)
 {
 	return item->data(kName, AirPlayDock::kKeyRole).toString();
@@ -155,7 +178,8 @@ AirPlayDock::AirPlayDock(DockBackend *backend, QWidget *parent) : QWidget(parent
 	add->setObjectName(QStringLiteral("addDisplay"));
 	display_settings_ = new QPushButton(QStringLiteral("Display settings..."));
 	display_settings_->setObjectName(QStringLiteral("displaySettingsButton"));
-	display_settings_->setToolTip(QStringLiteral("Settings for the selected display (also on its right-click menu)"));
+	display_settings_->setToolTip(
+		QStringLiteral("Settings for the selected display (or its gear, or double-click its status)"));
 	display_settings_->setEnabled(false);
 	auto *settings = new QPushButton(QStringLiteral("Settings..."));
 	settings->setObjectName(QStringLiteral("settings"));
@@ -173,21 +197,31 @@ AirPlayDock::AirPlayDock(DockBackend *backend, QWidget *parent) : QWidget(parent
 
 	tree_ = new DisplayTree;
 	tree_->setObjectName(QStringLiteral("displays"));
-	tree_->setColumnCount(3);
-	tree_->setHeaderLabels({QStringLiteral("Display"), QStringLiteral("Status"), QStringLiteral("Audio")});
+	tree_->setColumnCount(4);
+	tree_->setHeaderLabels({QStringLiteral("Display"), QStringLiteral("Status"), QStringLiteral("Audio"), QString()});
 	tree_->setContextMenuPolicy(Qt::CustomContextMenu);
 	tree_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	// All columns are user-resizable (Interactive); Audio, the last one,
-	// stretches to take the remainder instead of Display swallowing it (that
-	// left Display unresizable and squeezed to nothing in a narrow dock).
-	// Widths set here are just the initial layout: refresh() never touches
-	// them, so a resize the operator makes survives.
-	tree_->header()->setSectionResizeMode(kName, QHeaderView::Interactive);
-	tree_->header()->setSectionResizeMode(kStatus, QHeaderView::Interactive);
-	tree_->header()->setSectionResizeMode(kAudio, QHeaderView::Interactive);
-	tree_->header()->setStretchLastSection(true);
-	tree_->header()->setMinimumSectionSize(90);
-	tree_->header()->setSectionsMovable(false);
+	// Display and Status are user-resizable (Interactive); Audio stretches to
+	// take the remainder instead of Display swallowing it (that left Display
+	// unresizable and squeezed to nothing in a narrow dock). The last column
+	// is each display's settings button, at a fixed width. Widths set here
+	// are just the initial layout: refresh() never touches them, so a resize
+	// the operator makes survives.
+	QHeaderView *header = tree_->header();
+	header->setSectionResizeMode(kName, QHeaderView::Interactive);
+	header->setSectionResizeMode(kStatus, QHeaderView::Interactive);
+	header->setSectionResizeMode(kAudio, QHeaderView::Stretch);
+	header->setSectionResizeMode(kSettings, QHeaderView::Fixed);
+	header->setStretchLastSection(false);
+	// The header's minimum applies to every column, so it is the settings
+	// column's width; the data columns keep their own larger minimum here.
+	header->setMinimumSectionSize(kSettingsColumn);
+	header->resizeSection(kSettings, kSettingsColumn);
+	connect(header, &QHeaderView::sectionResized, this, [header](int index, int, int size) {
+		if (index != kSettings && size < kMinDataColumn)
+			header->resizeSection(index, kMinDataColumn);
+	});
+	header->setSectionsMovable(false);
 	tree_->setColumnWidth(kName, 240);
 	tree_->setColumnWidth(kStatus, 170);
 
@@ -225,6 +259,12 @@ AirPlayDock::AirPlayDock(DockBackend *backend, QWidget *parent) : QWidget(parent
 	});
 	connect(tree_, &QTreeWidget::currentItemChanged, this, [this](QTreeWidgetItem *current) {
 		display_settings_->setEnabled(current && !is_heading(current));
+	});
+	// Double-clicking a display's Status or Audio opens its settings; on its
+	// name, a double-click renames it instead.
+	connect(tree_, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem *item, int column) {
+		if ((column == kStatus || column == kAudio) && !is_heading(item))
+			open_display_settings(item_key(item).toStdString());
 	});
 	connect(tree_, &QTreeWidget::itemChanged, this,
 		[this](QTreeWidgetItem *item, int column) { on_item_changed(item, column); });
@@ -277,6 +317,10 @@ void AirPlayDock::refresh()
 				parent->addChild(item);
 			else
 				tree_->addTopLevelItem(item);
+			QToolButton *settings = make_settings_button();
+			const std::string id = row.device_id;
+			connect(settings, &QToolButton::clicked, this, [this, id] { open_display_settings(id); });
+			tree_->setItemWidget(item, kSettings, settings);
 			if (!current_is_heading && current_key == QString::fromStdString(row.device_id))
 				restore = item;
 		}
@@ -288,8 +332,8 @@ void AirPlayDock::refresh()
 	hint_->setText(tree_->topLevelItemCount() == 0
 			       ? QStringLiteral("No displays found yet. They appear here as they are discovered, "
 						 "or use Add display... to enter one by address.")
-			       : QStringLiteral("Check a display to send to it. Right-click a display for its "
-						 "settings, Restart, or Forget. Double-click a name to rename it."));
+			       : QStringLiteral("Check a display to send to it. The gear opens its settings; "
+						 "right-click for Restart or Forget. Double-click a name to rename it."));
 	refreshing_ = false;
 }
 
@@ -377,7 +421,7 @@ void AirPlayDock::open_display_settings(const std::string &device_id)
 			if (row.device_id == device_id)
 				display.display_name = row.display_name;
 	}
-	DisplaySettingsDialog dialog(display, backend_->locations(), this);
+	DisplaySettingsDialog dialog(display, backend_->locations(), backend_->scene_names(), this);
 	if (dialog.exec() == QDialog::Accepted) {
 		backend_->update_display(dialog.result_settings());
 		if (dialog.clear_password())

@@ -60,6 +60,7 @@ public:
 	bool running() const override;
 	std::string status_text() const override;
 	std::vector<std::string> available_encoders() const override;
+	std::vector<std::string> scene_names() const override;
 	bool can_remember_passwords() const override;
 	std::string diagnostics_report() const override;
 	void set_display_enabled(const std::string &device_id, bool enabled) override;
@@ -133,6 +134,7 @@ private:
 	void resync_displays(bool force);
 	void save_settings();
 	void note_activity();
+	void read_program_scene();
 	airplay::IdleInputs idle_inputs() const;
 	// Logs through obs_log AND appends the same line to log_ring_, so the
 	// diagnostics report carries the plugin's own recent log lines as well
@@ -158,6 +160,7 @@ private:
 	// (retry now) from "it never came up" (back off retries) in the timer.
 	bool output_was_active_ = false;
 	uint64_t last_activity_ns_ = 0;
+	std::string program_scene_; // updated on OBS scene events (UI thread)
 	uint64_t output_stopped_since_ns_ = 0;
 	// Next time the 15 s timer may retry a start() that never produced a
 	// usable encoder; 0 means "try on the next tick".

@@ -50,6 +50,9 @@ struct DisplaySettings {
 	IdlePolicy idle_policy = IdlePolicy::DisconnectWhenOutputStops;
 	int idle_minutes = 30;
 	std::string password_protected; // base64 of a DPAPI blob; empty = none
+	// Program scenes (by name) on which this display disconnects. Streaming
+	// and recording are unaffected; the display reconnects on other scenes.
+	std::vector<std::string> skip_scenes;
 };
 
 struct GlobalSettings {
@@ -79,6 +82,14 @@ struct GlobalSettings {
 
 bool operator==(const DisplaySettings &a, const DisplaySettings &b);
 bool operator!=(const DisplaySettings &a, const DisplaySettings &b);
+
+// Copies into `target` only the fields the Display settings dialog edits. A
+// new dialog field must be added here, or OK silently drops it. device_id,
+// enabled (owned by the checkbox/select-all path), password_protected (a
+// password remembered while the modal dialog was open must survive) and the
+// persisted, non-user-facing fields keep target's values.
+void merge_dialog_fields(DisplaySettings &target, const DisplaySettings &edited);
+
 bool operator==(const GlobalSettings &a, const GlobalSettings &b);
 bool operator!=(const GlobalSettings &a, const GlobalSettings &b);
 

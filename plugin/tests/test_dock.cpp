@@ -19,11 +19,13 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QTimer>
+#include <QToolButton>
 #include <QTreeWidget>
 
 #include <string>
@@ -51,6 +53,7 @@ public:
 	bool running() const override { return running_; }
 	std::string status_text() const override { return running_ ? "Live (obs_x264)" : "Stopped"; }
 	std::vector<std::string> available_encoders() const override { return {"obs_x264", "obs_nvenc_h264_tex"}; }
+	std::vector<std::string> scene_names() const override { return {"Pulpit", "Narthex Wide"}; }
 	bool can_remember_passwords() const override { return true; }
 	std::string diagnostics_report() const override { return "diagnostics report\n"; }
 	void set_display_enabled(const std::string &id, bool enabled) override
@@ -135,15 +138,18 @@ TEST_CASE("dock sizing: sensible minimum/hint, and columns are user-resizable wi
 	CHECK(dock.sizeHint().height() >= 380);
 
 	// Column indices, matching the Column enum in airplay-dock.cpp (not
-	// exposed to tests): 0 Display, 1 Status, 2 Audio.
+	// exposed to tests): 0 Display, 1 Status, 2 Audio, 3 the settings gear.
 	QHeaderView *header = dock.tree()->header();
 	CHECK(header->sectionResizeMode(0) == QHeaderView::Interactive);
 	CHECK(header->sectionResizeMode(1) == QHeaderView::Interactive);
-	CHECK(header->stretchLastSection()); // Audio (the last column) takes the remainder
+	CHECK(header->sectionResizeMode(2) == QHeaderView::Stretch); // Audio takes the remainder
+	CHECK(header->sectionResizeMode(3) == QHeaderView::Fixed);
 	CHECK_FALSE(header->sectionsMovable());
-	CHECK(header->minimumSectionSize() >= 90);
 	CHECK(dock.tree()->columnWidth(0) >= 240);
 	CHECK(dock.tree()->columnWidth(1) >= 170);
+	CHECK(dock.tree()->columnWidth(3) < 60);
+	header->resizeSection(0, 20); // a data column never shrinks below 90
+	CHECK(dock.tree()->columnWidth(0) >= 90);
 }
 
 TEST_CASE("dock groups displays under location headings, ungrouped last")
@@ -213,8 +219,8 @@ TEST_CASE("the hint label explains how to change a display's settings when the l
 	AirPlayDock dock(&b);
 	QLabel *hint = dock.findChild<QLabel *>(QStringLiteral("hint"));
 	REQUIRE(hint);
-	CHECK(hint->text() == QStringLiteral("Check a display to send to it. Right-click a display for its "
-					      "settings, Restart, or Forget. Double-click a name to rename it."));
+	CHECK(hint->text() == QStringLiteral("Check a display to send to it. The gear opens its settings; "
+					      "right-click for Restart or Forget. Double-click a name to rename it."));
 	CHECK(hint->wordWrap());
 }
 
@@ -631,4 +637,77 @@ TEST_CASE("display dialog: Auto TV delay mode is saved and only enabled for Auto
 	CHECK(dialog.result_settings().lead_mode.empty());
 	delay->setValue(120);
 	CHECK_FALSE(mode->isEnabled());
+}
+
+TEST_CASE("double-clicking a display's status opens its settings; a heading or name does not")
+{
+	FakeBackend b = two_groups();
+	AirPlayDock dock(&b);
+	QTreeWidget *tree = dock.tree();
+	QTreeWidgetItem *heading = tree->topLevelItem(0);
+	QTreeWidgetItem *row = heading->child(0);
+	const auto accept_dialog = [] {
+		QTimer::singleShot(0, [] {
+			if (auto *dialog = qobject_cast<QDialog *>(QApplication::activeModalWidget()))
+				dialog->accept();
+		});
+	};
+
+	emit tree->itemDoubleClicked(heading, 1);
+	emit tree->itemDoubleClicked(row, 0); // the name: rename, not settings
+	CHECK(b.calls.empty());
+
+	accept_dialog();
+	emit tree->itemDoubleClicked(row, 1);
+	REQUIRE(b.calls.size() == 1);
+	CHECK(b.calls.back() == "update " + row->data(0, AirPlayDock::kKeyRole).toString().toStdString());
+}
+
+TEST_CASE("display dialog: Disconnect on these scenes round-trips and keeps a scene OBS no longer lists")
+{
+	airplay::DisplaySettings d;
+	d.device_id = "N";
+	d.display_name = "Narthex";
+	d.skip_scenes = {"Old Wide"};
+	DisplaySettingsDialog dialog(d, {}, {"Pulpit", "Narthex Wide"});
+	CHECK(dialog.result_settings() == d); // untouched: the missing scene stays
+
+	auto *list = dialog.findChild<QListWidget *>(QStringLiteral("skipScenes"));
+	REQUIRE(list != nullptr);
+	REQUIRE(list->count() == 3);
+	CHECK(list->item(0)->text() == QStringLiteral("Pulpit"));
+	CHECK(list->item(0)->checkState() == Qt::Unchecked);
+	CHECK(list->item(2)->text() == QStringLiteral("Old Wide (not in this scene collection)"));
+	CHECK(list->item(2)->checkState() == Qt::Checked);
+
+	list->item(1)->setCheckState(Qt::Checked);
+	list->item(2)->setCheckState(Qt::Unchecked);
+	CHECK(dialog.result_settings().skip_scenes == std::vector<std::string>{"Narthex Wide"});
+}
+
+TEST_CASE("every display row has a settings gear that opens its settings; headings have none")
+{
+	FakeBackend b = two_groups();
+	AirPlayDock dock(&b);
+	QTreeWidget *tree = dock.tree();
+	QTreeWidgetItem *heading = tree->topLevelItem(0);
+	CHECK(tree->itemWidget(heading, 3) == nullptr);
+	CHECK(dock.findChildren<QToolButton *>(QStringLiteral("rowSettings")).size() == 3);
+
+	QTreeWidgetItem *row = heading->child(1);
+	auto *gear = qobject_cast<QToolButton *>(tree->itemWidget(row, 3));
+	REQUIRE(gear != nullptr);
+	CHECK(gear->toolTip() == QStringLiteral("Display settings"));
+	QTimer::singleShot(0, [] {
+		if (auto *dialog = qobject_cast<QDialog *>(QApplication::activeModalWidget()))
+			dialog->accept();
+	});
+	gear->click();
+	REQUIRE(b.calls.size() == 1);
+	CHECK(b.calls.back() == "update " + row->data(0, AirPlayDock::kKeyRole).toString().toStdString());
+
+	dock.refresh(); // rebuilt rows get their gears back
+	QApplication::processEvents(QEventLoop::AllEvents);
+	QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+	CHECK(dock.findChildren<QToolButton *>(QStringLiteral("rowSettings")).size() == 3);
 }

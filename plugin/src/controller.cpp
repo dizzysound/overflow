@@ -177,6 +177,7 @@ void Controller::handle_frontend_event(enum obs_frontend_event event)
 	switch (event) {
 	case OBS_FRONTEND_EVENT_FINISHED_LOADING:
 		loaded_ = true;
+		read_program_scene();
 		start_helper();
 		autostart_.obs_loaded();
 		note_activity();
@@ -196,8 +197,11 @@ void Controller::handle_frontend_event(enum obs_frontend_event event)
 		apply_run_state();
 		break;
 	case OBS_FRONTEND_EVENT_SCENE_CHANGED:
+	case OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED:
+		read_program_scene();
 		note_activity();
 		resync_displays(false);
+		emit rows_changed();
 		break;
 	case OBS_FRONTEND_EVENT_EXIT:
 		shutdown();
@@ -609,7 +613,15 @@ airplay::IdleInputs Controller::idle_inputs() const
 	in.now_ns = os_gettime_ns();
 	in.last_activity_ns = last_activity_ns_;
 	in.output_stopped_since_ns = output_stopped_since_ns_;
+	in.program_scene = program_scene_;
 	return in;
+}
+
+void Controller::read_program_scene()
+{
+	obs_source_t *scene = obs_frontend_get_current_scene();
+	program_scene_ = scene ? obs_source_get_name(scene) : "";
+	obs_source_release(scene);
 }
 
 void Controller::resync_displays(bool force)
@@ -679,12 +691,18 @@ void Controller::log(airplay::LogLevel level, const std::string &message)
 
 std::vector<airplay::DisplayRow> Controller::rows() const
 {
-	return view_->rows();
+	std::vector<airplay::DisplayRow> rows = view_->rows();
+	if (output_->active())
+		airplay::mark_scene_skips(rows, settings_, program_scene_);
+	return rows;
 }
 
 std::vector<airplay::DisplayGroup> Controller::groups() const
 {
-	return view_->groups();
+	std::vector<airplay::DisplayGroup> groups = view_->groups();
+	if (output_->active())
+		airplay::mark_scene_skips(groups, settings_, program_scene_);
+	return groups;
 }
 
 std::vector<std::string> Controller::locations() const
@@ -751,6 +769,16 @@ std::string Controller::status_text() const
 std::vector<std::string> Controller::available_encoders() const
 {
 	return AirPlayOutput::available_encoders();
+}
+
+std::vector<std::string> Controller::scene_names() const
+{
+	std::vector<std::string> names;
+	char **list = obs_frontend_get_scene_names();
+	for (char **name = list; name && *name; ++name)
+		names.emplace_back(*name);
+	bfree(list);
+	return names;
 }
 
 bool Controller::can_remember_passwords() const
@@ -874,26 +902,10 @@ void Controller::update_display(const airplay::DisplaySettings &display)
 	// `target = display` would also overwrite password_protected with the
 	// dialog's opening snapshot, discarding a password remembered (via the
 	// credential prompt) while the modal dialog was still open; clearing the
-	// saved password is a separate, explicit action (forget_password). This
-	// also leaves device_id (already-normalized uppercase, restored below for
-	// clarity) and enabled (owned by the checkbox/select-all path) untouched.
-	target.display_name = display.display_name;
-	target.location = display.location;
-	target.auto_reconnect = display.auto_reconnect;
-	target.audio_enabled = display.audio_enabled;
-	target.wifi_tolerant = display.wifi_tolerant;
-	target.latency_ms = display.latency_ms;
-	target.lead_mode = display.lead_mode;
-	target.audio_format = display.audio_format;
-	target.volume_db = display.volume_db;
-	target.manual_ip = display.manual_ip;
-	target.manual_port = display.manual_port;
-	target.idle_policy = display.idle_policy;
-	target.idle_minutes = display.idle_minutes;
-	// device_id is uppercased ASCII everywhere (settings.hpp); restore it from
-	// the already-normalized entry rather than trust the incoming struct's
-	// case, which may not hold that invariant.
-	target.device_id = before.device_id;
+	// saved password is a separate, explicit action (forget_password). It also
+	// leaves device_id (already-normalized uppercase, settings.hpp) and enabled
+	// (owned by the checkbox/select-all path) untouched.
+	airplay::merge_dialog_fields(target, display);
 	// A live change applies now; set_displays below also stores it for later sessions.
 	// Receiver volume must never change unless configured: only when volume_db
 	// is set and it actually changed, and never for a display with audio off

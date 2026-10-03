@@ -204,3 +204,65 @@ TEST_CASE("selection_for copies audio_format into the selection")
 	REQUIRE(sel.size() == 1);
 	CHECK(sel[0].audio_format == "aac-eld");
 }
+
+TEST_CASE("scene skip: a display drops on its skipped scenes only, whatever the idle policy")
+{
+	DisplaySettings r = display(IdlePolicy::StayConnected);
+	r.skip_scenes = {"Narthex Wide"};
+	IdleInputs in;
+	in.output_running = true;
+	in.ever_started = true;
+	in.obs_busy = true;
+	in.program_scene = "Pulpit";
+	CHECK(display_wanted(r, in));
+	in.program_scene = "Narthex Wide";
+	CHECK_FALSE(display_wanted(r, in));
+	CHECK(display_wanted(display(IdlePolicy::StayConnected), in)); // other displays stay
+	in.program_scene.clear(); // unknown scene: never skips
+	CHECK(display_wanted(r, in));
+	CHECK_FALSE(skipped_on_scene(r, ""));
+}
+
+TEST_CASE("scene skip: selection_for leaves out a skipped display")
+{
+	Settings s;
+	s.displays = {display(IdlePolicy::StayConnected), display(IdlePolicy::StayConnected)};
+	s.displays[1].device_id = "B";
+	s.displays[1].skip_scenes = {"Wide"};
+	IdleInputs in;
+	in.output_running = true;
+	in.ever_started = true;
+	in.obs_busy = true;
+	in.program_scene = "Wide";
+	const auto sel = selection_for(s, in, {});
+	REQUIRE(sel.size() == 1);
+	CHECK(sel[0].device_id == "A");
+}
+
+TEST_CASE("scene skip: rows of enabled skipped displays read off on this scene")
+{
+	Settings s;
+	s.displays = {display(IdlePolicy::StayConnected), display(IdlePolicy::StayConnected)};
+	s.displays[0].skip_scenes = {"Wide"};
+	s.displays[1].device_id = "B";
+	s.displays[1].skip_scenes = {"Wide"};
+	s.displays[1].enabled = false;
+	DisplayRow a;
+	a.device_id = "A";
+	a.enabled = true;
+	a.state = "idle";
+	DisplayRow b;
+	b.device_id = "B";
+	b.state = "";
+	DisplayGroup g;
+	g.displays = {a, b};
+	std::vector<DisplayGroup> groups = {g};
+
+	mark_scene_skips(groups, s, "Pulpit");
+	CHECK(groups[0].displays[0].state == "idle");
+	mark_scene_skips(groups, s, "Wide");
+	CHECK(groups[0].displays[0].state == "off on this scene");
+	CHECK(groups[0].displays[0].light == Light::Gray);
+	CHECK(groups[0].displays[0].status_tooltip.find("\"Wide\"") != std::string::npos);
+	CHECK(groups[0].displays[1].state.empty()); // unchecked displays are left alone
+}

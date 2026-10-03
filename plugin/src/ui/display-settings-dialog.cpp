@@ -15,6 +15,7 @@
 #include <QHostAddress>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QVBoxLayout>
@@ -33,7 +34,8 @@ bool valid_or_empty_ip(const QString &text)
 } // namespace
 
 DisplaySettingsDialog::DisplaySettingsDialog(const airplay::DisplaySettings &display,
-					     const std::vector<std::string> &locations, QWidget *parent)
+					     const std::vector<std::string> &locations,
+					     const std::vector<std::string> &scenes, QWidget *parent)
 	: QDialog(parent), original_(display)
 {
 	setWindowTitle(QStringLiteral("Display settings"));
@@ -172,6 +174,35 @@ DisplaySettingsDialog::DisplaySettingsDialog(const airplay::DisplaySettings &dis
 	idle_note->setWordWrap(true);
 	form->addRow(idle_note);
 
+	skip_scenes_ = new QListWidget;
+	skip_scenes_->setObjectName(QStringLiteral("skipScenes"));
+	const auto add_scene = [this, &display](const std::string &name, bool missing) {
+		const QString text = QString::fromStdString(name);
+		auto *item = new QListWidgetItem(missing ? text + QStringLiteral(" (not in this scene collection)") : text);
+		item->setData(Qt::UserRole, text);
+		item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+		const bool checked = std::find(display.skip_scenes.begin(), display.skip_scenes.end(), name) !=
+				     display.skip_scenes.end();
+		item->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+		skip_scenes_->addItem(item);
+	};
+	for (const std::string &name : scenes)
+		add_scene(name, false);
+	// A saved scene that OBS does not list (renamed, or another collection)
+	// stays checked until the operator unchecks it.
+	for (const std::string &name : display.skip_scenes)
+		if (std::find(scenes.begin(), scenes.end(), name) == scenes.end())
+			add_scene(name, true);
+	skip_scenes_->setMaximumHeight(skip_scenes_->fontMetrics().height() * 7);
+	skip_scenes_->setToolTip(QStringLiteral(
+		"For a scene that shows this display on camera: AirPlay to it stops while that scene is on program."));
+	form->addRow(QStringLiteral("Disconnect on these scenes"), skip_scenes_);
+	auto *skip_note = new QLabel(QStringLiteral(
+		"Streaming and recording are not affected. The display reconnects when you switch to any other "
+		"scene, after a short reconnect. A renamed scene must be checked again."));
+	skip_note->setWordWrap(true);
+	form->addRow(skip_note);
+
 	clear_password_ = new QCheckBox(QStringLiteral("Forget the saved AirPlay password"));
 	clear_password_->setObjectName(QStringLiteral("clearPassword"));
 	clear_password_->setVisible(!display.password_protected.empty());
@@ -207,6 +238,12 @@ airplay::DisplaySettings DisplaySettingsDialog::result_settings() const
 	r.audio_format = audio_format_->currentData().toString().toStdString();
 	r.idle_policy = static_cast<IdlePolicy>(idle_->currentData().toInt());
 	r.idle_minutes = idle_minutes_->value();
+	r.skip_scenes.clear();
+	for (int i = 0; i < skip_scenes_->count(); ++i) {
+		const QListWidgetItem *item = skip_scenes_->item(i);
+		if (item->checkState() == Qt::Checked)
+			r.skip_scenes.push_back(item->data(Qt::UserRole).toString().toStdString());
+	}
 	return r;
 }
 

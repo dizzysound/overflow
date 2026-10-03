@@ -22,6 +22,8 @@ public:
 	virtual bool running() const = 0;
 	virtual std::string status_text() const = 0;
 	virtual std::vector<std::string> available_encoders() const = 0;
+	// OBS's scene names in the current scene collection, in OBS's order.
+	virtual std::vector<std::string> scene_names() const = 0;
 	virtual bool can_remember_passwords() const = 0;
 	// A plain-text diagnostics report: plugin version and time, helper and
 	// output status, global settings, each display's summary, and the

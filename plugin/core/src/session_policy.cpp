@@ -3,6 +3,8 @@
 
 #include "airplay/session_policy.hpp"
 
+#include <algorithm>
+
 namespace airplay {
 namespace {
 
@@ -68,9 +70,34 @@ bool AutoStart::should_run() const
 	       (options_.with_recording && recording_);
 }
 
+bool skipped_on_scene(const DisplaySettings &display, const std::string &scene)
+{
+	return !scene.empty() &&
+	       std::find(display.skip_scenes.begin(), display.skip_scenes.end(), scene) != display.skip_scenes.end();
+}
+
+void mark_scene_skips(std::vector<DisplayRow> &rows, const Settings &settings, const std::string &scene)
+{
+	for (DisplayRow &row : rows) {
+		const DisplaySettings *d = settings.find_display(row.device_id);
+		if (!row.enabled || !d || !skipped_on_scene(*d, scene))
+			continue;
+		row.state = "off on this scene";
+		row.light = Light::Gray;
+		row.status_tooltip = "Disconnected while the program scene is \"" + scene +
+				     "\". It reconnects on other scenes (Display settings).";
+	}
+}
+
+void mark_scene_skips(std::vector<DisplayGroup> &groups, const Settings &settings, const std::string &scene)
+{
+	for (DisplayGroup &g : groups)
+		mark_scene_skips(g.displays, settings, scene);
+}
+
 bool display_wanted(const DisplaySettings &display, const IdleInputs &in)
 {
-	if (!display.enabled)
+	if (!display.enabled || skipped_on_scene(display, in.program_scene))
 		return false;
 	if (in.output_running) {
 		if (display.idle_policy != IdlePolicy::DisconnectAfterIdle || in.obs_busy)

@@ -19,7 +19,7 @@ AirPlay screen mirroring sender for Linux. Streams your desktop to an Apple TV u
 
 ## Requirements
 
-- Go 1.23+
+- Go 1.26+
 - GStreamer 1.0 (with plugins-base, plugins-good, plugins-bad, plugins-ugly, libav)
 - PulseAudio utilities (`pactl`; `pulseaudio-utils` on Ubuntu/Debian or the equivalent package on other distributions)
 - PipeWire (Wayland) or X11 for screen capture

@@ -14,15 +14,17 @@ class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QLineEdit;
+class QListWidget;
 class QSpinBox;
 
 // Per-display settings: name, location, auto-reconnect, volume, manual
-// address, Wi-Fi tolerance, TV delay, idle policy, and clearing the saved
-// password.
+// address, Wi-Fi tolerance, TV delay, idle policy, scenes to disconnect on,
+// and clearing the saved password.
 class DisplaySettingsDialog : public QDialog {
 public:
+	// scenes: OBS's scene names, offered as "Disconnect on these scenes".
 	DisplaySettingsDialog(const airplay::DisplaySettings &display, const std::vector<std::string> &locations,
-			      QWidget *parent = nullptr);
+			      const std::vector<std::string> &scenes = {}, QWidget *parent = nullptr);
 	// Never reflects the "Forget the saved AirPlay password" checkbox; that is
 	// reported separately by clear_password(), since clearing the password is
 	// a distinct action (DockBackend::forget_password), not a settings field.
@@ -45,5 +47,6 @@ private:
 	QComboBox *lead_mode_ = nullptr;
 	QComboBox *idle_ = nullptr;
 	QSpinBox *idle_minutes_ = nullptr;
+	QListWidget *skip_scenes_ = nullptr;
 	QCheckBox *clear_password_ = nullptr;
 };
