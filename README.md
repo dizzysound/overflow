@@ -2,6 +2,8 @@
 
 **Send your OBS program output to the TVs in other rooms, several at once, over AirPlay.**
 
+![One OBS PC sends its program to AirPlay TVs in an overflow room, a fellowship hall and a lobby](docs/images/overview.svg)
+
 Overflow is an OBS Studio plugin for overflow rooms, lobbies, cry rooms, fellowship halls, and any
 other place that needs to see and hear what's happening in the main room. It encodes the OBS program
 (video and audio) once and plays it on Apple TVs, Roku TVs and other AirPlay receivers, all at the
@@ -10,6 +12,22 @@ recording are not affected.
 
 It was built for a church that streams its services with OBS and needed the same picture and sound
 on TVs in three other rooms.
+
+## Screenshots
+
+<p>
+  <img src="docs/images/dock.png" width="560" alt="The Overflow dock in OBS: displays grouped by room, each with a status light, and the TV delay for each live display">
+</p>
+
+The Overflow dock: displays grouped by room, a status light for each, and each live display's TV
+delay and audio health. (Sample rooms.)
+
+<p>
+  <img src="docs/images/display-settings.png" width="300" alt="Display settings: name, location, reconnect, audio, volume, address, Wi-Fi tolerance, TV delay, audio format and idle behavior">
+  <img src="docs/images/settings.png" width="360" alt="Overflow settings: auto-start with OBS, streaming or recording, audio track, video preset, encoder, latency and timing">
+</p>
+
+Per-display settings, and the plugin's settings.
 
 ## Features
 

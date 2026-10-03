@@ -67,3 +67,21 @@ if(AIRPLAY_UI_TESTS)
   add_test(NAME ui-tests COMMAND ui-tests)
   set_tests_properties(ui-tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 120)
 endif()
+
+# Renders the dock and dialogs with sample rooms to PNG for the README (needs Qt 6):
+#   cmake -S plugin/tests -B build-shots -DAIRPLAY_SCREENSHOTS=ON -DCMAKE_PREFIX_PATH="$(brew --prefix qtbase)"
+option(AIRPLAY_SCREENSHOTS "Build the README screenshot renderer" OFF)
+if(AIRPLAY_SCREENSHOTS)
+  find_package(Qt6 REQUIRED COMPONENTS Widgets Network)
+  add_executable(
+    screenshots
+    ../tools/screenshots/screenshots.cpp
+    ../src/ui/airplay-dock.cpp
+    ../src/ui/display-settings-dialog.cpp
+    ../src/ui/global-settings-dialog.cpp
+    ../src/ui/credential-dialog.cpp
+    ../src/ui/add-display-dialog.cpp
+  )
+  target_include_directories(screenshots PRIVATE ../src/ui)
+  target_link_libraries(screenshots PRIVATE airplay-core Qt6::Widgets Qt6::Network)
+endif()

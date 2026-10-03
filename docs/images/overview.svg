@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 300" width="880" height="300" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <title>Overflow: one OBS PC sends its program to AirPlay TVs in several rooms</title>
+  <rect width="880" height="300" rx="16" fill="#1f2129"/>
+
+  <!-- OBS PC -->
+  <rect x="32" y="82" width="250" height="136" rx="12" fill="#2c303b" stroke="#476be6" stroke-width="2"/>
+  <text x="157" y="118" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">OBS Studio</text>
+  <text x="157" y="142" text-anchor="middle" font-size="14" fill="#c9ccd6">program video + audio</text>
+  <rect x="62" y="160" width="190" height="38" rx="8" fill="#476be6"/>
+  <text x="157" y="185" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">Overflow plugin</text>
+
+  <!-- Arrows -->
+  <g stroke="#7f95ef" stroke-width="2.5" fill="none" stroke-linecap="round">
+    <path d="M282 150 C 380 150, 400 62, 520 62"/>
+    <path d="M282 150 L 520 150"/>
+    <path d="M282 150 C 380 150, 400 238, 520 238"/>
+  </g>
+  <g fill="#7f95ef">
+    <path d="M520 55 L534 62 L520 69 Z"/>
+    <path d="M520 143 L534 150 L520 157 Z"/>
+    <path d="M520 231 L534 238 L520 245 Z"/>
+  </g>
+  <text x="450" y="174" text-anchor="middle" font-size="13" fill="#c9ccd6">AirPlay over your network</text>
+
+  <!-- Rooms -->
+  <g>
+    <rect x="540" y="30" width="308" height="64" rx="10" fill="#2c303b"/>
+    <rect x="556" y="44" width="52" height="34" rx="4" fill="#11131a" stroke="#5a5e6b"/>
+    <circle cx="582" cy="61" r="5" fill="#3fbf5f"/>
+    <text x="624" y="58" font-size="16" font-weight="700" fill="#ffffff">Overflow Room</text>
+    <text x="624" y="79" font-size="13" fill="#c9ccd6">Apple TV</text>
+  </g>
+  <g>
+    <rect x="540" y="118" width="308" height="64" rx="10" fill="#2c303b"/>
+    <rect x="556" y="132" width="52" height="34" rx="4" fill="#11131a" stroke="#5a5e6b"/>
+    <circle cx="582" cy="149" r="5" fill="#3fbf5f"/>
+    <text x="624" y="146" font-size="16" font-weight="700" fill="#ffffff">Fellowship Hall</text>
+    <text x="624" y="167" font-size="13" fill="#c9ccd6">Roku TV</text>
+  </g>
+  <g>
+    <rect x="540" y="206" width="308" height="64" rx="10" fill="#2c303b"/>
+    <rect x="556" y="220" width="52" height="34" rx="4" fill="#11131a" stroke="#5a5e6b"/>
+    <circle cx="582" cy="237" r="5" fill="#3fbf5f"/>
+    <text x="624" y="234" font-size="16" font-weight="700" fill="#ffffff">Lobby</text>
+    <text x="624" y="255" font-size="13" fill="#c9ccd6">AirPlay TV or panel</text>
+  </g>
+</svg>
