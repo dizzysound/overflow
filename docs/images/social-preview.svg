@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <title>Overflow: send OBS to the TVs in other rooms over AirPlay</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1d24"/>
+      <stop offset="1" stop-color="#262a36"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+
+  <!-- Title block -->
+  <text x="80" y="230" font-size="104" font-weight="800" fill="#ffffff" letter-spacing="-2">Overflow</text>
+  <text x="84" y="296" font-size="34" fill="#c9ccd6">Send OBS to the TVs in other rooms,</text>
+  <text x="84" y="342" font-size="34" fill="#c9ccd6">several at once, over AirPlay.</text>
+  <g font-size="24" fill="#9aa6d8">
+    <rect x="84" y="392" width="140" height="44" rx="22" fill="#2f3546"/>
+    <text x="154" y="421" text-anchor="middle">Apple TV</text>
+    <rect x="236" y="392" width="128" height="44" rx="22" fill="#2f3546"/>
+    <text x="300" y="421" text-anchor="middle">Roku TV</text>
+    <rect x="376" y="392" width="176" height="44" rx="22" fill="#2f3546"/>
+    <text x="464" y="421" text-anchor="middle">OBS plugin</text>
+  </g>
+  <text x="84" y="530" font-size="24" fill="#7d8291">github.com/dizzysound/overflow</text>
+
+  <!-- Diagram -->
+  <g transform="translate(20,0)">
+  <rect x="660" y="250" width="190" height="140" rx="16" fill="#2c303b" stroke="#476be6" stroke-width="3"/>
+  <text x="755" y="300" text-anchor="middle" font-size="26" font-weight="700" fill="#ffffff">OBS</text>
+  <rect x="682" y="324" width="146" height="44" rx="10" fill="#476be6"/>
+  <text x="755" y="353" text-anchor="middle" font-size="21" font-weight="700" fill="#ffffff">Overflow</text>
+
+  <g stroke="#7f95ef" stroke-width="4" fill="none" stroke-linecap="round">
+    <path d="M850 320 C 910 320, 920 170, 990 170"/>
+    <path d="M850 320 L 990 320"/>
+    <path d="M850 320 C 910 320, 920 470, 990 470"/>
+  </g>
+  <g fill="#7f95ef">
+    <path d="M988 160 L1006 170 L988 180 Z"/>
+    <path d="M988 310 L1006 320 L988 330 Z"/>
+    <path d="M988 460 L1006 470 L988 480 Z"/>
+  </g>
+
+  <g font-size="20" fill="#ffffff" font-weight="700">
+    <rect x="1014" y="120" width="206" height="100" rx="14" fill="#2c303b"/>
+    <rect x="1036" y="138" width="60" height="40" rx="5" fill="#11131a" stroke="#5a5e6b" stroke-width="2"/>
+    <circle cx="1066" cy="158" r="7" fill="#3fbf5f"/>
+    <text x="1036" y="206">Overflow Room</text>
+
+    <rect x="1014" y="270" width="206" height="100" rx="14" fill="#2c303b"/>
+    <rect x="1036" y="288" width="60" height="40" rx="5" fill="#11131a" stroke="#5a5e6b" stroke-width="2"/>
+    <circle cx="1066" cy="308" r="7" fill="#3fbf5f"/>
+    <text x="1036" y="356">Hall</text>
+
+    <rect x="1014" y="420" width="206" height="100" rx="14" fill="#2c303b"/>
+    <rect x="1036" y="438" width="60" height="40" rx="5" fill="#11131a" stroke="#5a5e6b" stroke-width="2"/>
+    <circle cx="1066" cy="458" r="7" fill="#3fbf5f"/>
+    <text x="1036" y="506">Lobby</text>
+  </g>
+  </g>
+</svg>
