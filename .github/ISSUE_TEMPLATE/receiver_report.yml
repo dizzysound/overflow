@@ -1,0 +1,32 @@
+name: Receiver report
+description: Tell others how a TV or AirPlay receiver works with Overflow.
+labels: [receiver-compatibility]
+body:
+  - type: input
+    id: receiver
+    attributes:
+      label: Receiver make and model
+      placeholder: Samsung QN65Q80C
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Video and audio work
+        - Video only
+        - Audio only
+        - Doesn't connect
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Overflow version, OBS version, and network
+      placeholder: 0.1.0, OBS 32.2.2, receiver on Wi-Fi
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Pairing, AAC-ELD audio, TV delay that worked, anything unusual.

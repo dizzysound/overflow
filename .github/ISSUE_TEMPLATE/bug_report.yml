@@ -1,0 +1,41 @@
+name: Bug report
+description: Something in Overflow doesn't work as described.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Overflow version
+      description: From the OBS log line "[obs-overflow] plugin loaded (version ...)".
+    validations:
+      required: true
+  - type: input
+    id: obs
+    attributes:
+      label: OBS version and operating system
+      placeholder: OBS 32.2.2, Windows 11
+    validations:
+      required: true
+  - type: input
+    id: receiver
+    attributes:
+      label: Receiver
+      description: Make and model, and Ethernet or Wi-Fi.
+      placeholder: Apple TV HD, Ethernet
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Diagnostic report or log
+      description: >-
+        Tools > Overflow: Save Diagnostic Log... (secrets are redacted), or the "[obs-overflow]" lines
+        from Help > Log Files.
+      render: text

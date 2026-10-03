@@ -1,0 +1,241 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Christopher Gillespie
+
+name: plugin
+
+on:
+  push:
+    paths:
+      - 'plugin/**'
+      - 'helper/**'
+      - 'eld-encoder/**'
+      - '.github/workflows/plugin.yml'
+  pull_request:
+    paths:
+      - 'plugin/**'
+      - 'helper/**'
+      - 'eld-encoder/**'
+      - '.github/workflows/plugin.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: plugin-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  core-tests:
+    name: core tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, macos-15, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt for the dock smoke tests
+        if: runner.os == 'macOS'
+        run: brew install qtbase
+      - name: Configure
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            cmake -S plugin/tests -B build-tests -DAIRPLAY_UI_TESTS=ON -DCMAKE_PREFIX_PATH="$(brew --prefix qtbase)"
+          else
+            cmake -S plugin/tests -B build-tests
+          fi
+      - name: Build
+        run: cmake --build build-tests --config Debug --parallel
+      - name: Test
+        run: ctest --test-dir build-tests -C Debug --output-on-failure
+
+  helper-windows:
+    name: helper (windows)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache-dependency-path: helper/go.sum
+      - name: make helper-windows
+        run: make -C helper helper-windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: overflow-helper-windows
+          path: helper/bin/windows/overflow-helper.exe
+          if-no-files-found: error
+
+  helper-linux:
+    name: helper (linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache-dependency-path: helper/go.sum
+      - name: make helper-linux
+        run: make -C helper helper-linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: overflow-helper-linux
+          path: helper/bin/linux/overflow-helper
+          if-no-files-found: error
+
+  eld-encoder-windows:
+    name: eld-encoder (windows)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mingw-w64
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+      - name: Cache the fdk-aac source tarball
+        uses: actions/cache@v4
+        with:
+          path: eld-encoder/build/fdk-aac-2.0.3.tar.gz
+          key: fdk-aac-2.0.3-${{ hashFiles('eld-encoder/build.sh') }}
+      - name: build.sh windows
+        run: ./eld-encoder/build.sh windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eld-encoder-windows
+          path: |
+            helper/bin/windows/eld-encoder.exe
+            helper/bin/windows/eld-encoder-FDK-AAC-NOTICE.txt
+          if-no-files-found: error
+
+  plugin-windows:
+    name: plugin (windows)
+    runs-on: windows-2022
+    needs: [helper-windows, eld-encoder-windows]
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: plugin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: overflow-helper-windows
+          path: plugin/helper-bin
+      - uses: actions/download-artifact@v4
+        with:
+          name: eld-encoder-windows
+          path: plugin/helper-bin
+      - name: Cache OBS build dependencies
+        uses: actions/cache@v4
+        with:
+          path: plugin/.deps
+          key: obs-deps-windows-x64-${{ hashFiles('plugin/buildspec.json') }}
+      - name: Configure
+        run: cmake --preset windows-ci-x64 -DAIRPLAY_HELPER_BIN_DIR="$env:GITHUB_WORKSPACE/plugin/helper-bin"
+      - name: Build
+        run: cmake --build --preset windows-x64 --config RelWithDebInfo --parallel
+      - name: Install
+        run: cmake --install build_x64 --prefix release/RelWithDebInfo --config RelWithDebInfo
+      - name: Verify package layout
+        run: |
+          $Root = "release/RelWithDebInfo/obs-overflow"
+          $Expected = @(
+            "bin/64bit/obs-overflow.dll",
+            "bin/64bit/overflow-helper.exe",
+            "bin/64bit/eld-encoder.exe",
+            "bin/64bit/eld-encoder-FDK-AAC-NOTICE.txt",
+            "data/locale/en-US.ini",
+            "LICENSE.txt",
+            "README.txt",
+            "licenses/nlohmann-json-MIT.txt",
+            "licenses/doubletake-LGPL-3.0.txt",
+            "licenses/eld-encoder-LICENSE-NOTICE.md"
+          )
+          $Missing = $Expected | Where-Object { -not (Test-Path (Join-Path $Root $_)) }
+          if ($Missing) {
+            Write-Error ("missing from the package: " + ($Missing -join ", "))
+            exit 1
+          }
+          Get-ChildItem -Recurse -File $Root | ForEach-Object { $_.FullName }
+      - name: Package
+        run: |
+          $Version = (Get-Content buildspec.json -Raw | ConvertFrom-Json).version
+          Compress-Archive -Path release/RelWithDebInfo/* -DestinationPath "release/obs-overflow-$Version-windows-x64.zip" -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: obs-overflow-windows-x64
+          path: plugin/release/obs-overflow-*-windows-x64.zip
+          if-no-files-found: error
+      # Plan 3's installer job consumes this tree.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: obs-overflow-windows-x64-tree
+          path: plugin/release/RelWithDebInfo
+          if-no-files-found: error
+
+  plugin-macos:
+    name: plugin (macos)
+    # OBS 32.2.2 requires the macOS 26.5 SDK (Xcode 26.5) to configure libobs.
+    runs-on: macos-26
+    defaults:
+      run:
+        working-directory: plugin
+    env:
+      CODESIGN_IDENT: '-'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select the newest Xcode 26
+        run: |
+          ls -d /Applications/Xcode*.app
+          XCODE="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -n 1)"
+          echo "Selecting $XCODE"
+          sudo xcode-select --switch "$XCODE/Contents/Developer"
+          xcodebuild -version
+          xcrun --show-sdk-version
+      - name: Cache OBS build dependencies
+        uses: actions/cache@v4
+        with:
+          path: plugin/.deps
+          key: obs-deps-macos-${{ hashFiles('plugin/buildspec.json') }}
+      - name: Configure
+        run: cmake --preset macos-ci -DENABLE_CCACHE=OFF
+      - name: Build
+        run: cmake --build --preset macos-ci
+
+  plugin-linux:
+    name: plugin (linux)
+    # No eld-encoder on Linux yet (eld-encoder/build.sh has no Linux target); the
+    # helper already runs video-only without it, so this job needs no helper
+    # or eld-encoder artifact. Packaging (.deb/Flatpak) is a later Linux plan.
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: plugin
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OBS and Qt 6 build dependencies
+        run: |
+          sudo add-apt-repository --yes ppa:obsproject/obs-studio
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            ninja-build \
+            pkg-config \
+            libgles2-mesa-dev \
+            libsimde-dev \
+            obs-studio \
+            qt6-base-dev \
+            libqt6svg6-dev \
+            qt6-base-private-dev
+      - name: Configure
+        run: cmake --preset ubuntu-ci-x86_64 -DENABLE_CCACHE=OFF
+      - name: Build
+        run: cmake --build --preset ubuntu-ci-x86_64 --parallel
+      - name: Install
+        run: cmake --install build_x86_64 --prefix release/RelWithDebInfo
+      - uses: actions/upload-artifact@v4
+        with:
+          name: obs-overflow-linux-x86_64
+          path: plugin/release/RelWithDebInfo/**
+          if-no-files-found: error

@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Christopher Gillespie
+
+# Template dependency cache and build trees
+/.deps/
+/build_*/
+/release/
+# Helper binaries CI downloads for packaging
+/helper-bin/
+# Standalone core test builds
+/build-tests/
+/cmake/.CMakeBuildNumber
+*.lock.json
+.DS_Store

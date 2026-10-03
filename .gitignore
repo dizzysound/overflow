@@ -1,0 +1,17 @@
+data/prior-airplay-sender/
+
+# raw on-site debug logs contain session keys; keep locally, do not commit
+data/spike/**/*.log
+.claude/worktrees/
+
+# obs-overflow plugin build outputs (see plugin/.gitignore)
+plugin/.deps/
+plugin/build_*/
+plugin/release/
+plugin/helper-bin/
+plugin/build-tests/
+data/**/recordings/
+
+data/packages/
+
+.DS_Store

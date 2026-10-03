@@ -1,0 +1,70 @@
+name: helper
+
+on:
+  push:
+    paths:
+      - 'helper/**'
+      - '.github/workflows/helper.yml'
+  pull_request:
+    paths:
+      - 'helper/**'
+      - '.github/workflows/helper.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: helper-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: helper
+        shell: bash
+    env:
+      # The shipped Windows helper is built without cgo; test what ships.
+      CGO_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache-dependency-path: helper/go.sum
+      - name: Use a short TMPDIR on macOS
+        # The default macOS TMPDIR is long enough to overflow Unix socket paths in the daemon tests.
+        if: runner.os == 'macOS'
+        run: echo "TMPDIR=/tmp" >> "$GITHUB_ENV"
+      - name: go vet
+        run: go vet ./...
+      - name: go test
+        run: go test -timeout 15m ./...
+
+  build-windows:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: helper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache-dependency-path: helper/go.sum
+      - name: make helper-windows
+        run: make helper-windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: overflow-helper-windows
+          path: |
+            helper/bin/windows/overflow-helper.exe
+            helper/bin/windows/airplay-feed.exe
+          if-no-files-found: error

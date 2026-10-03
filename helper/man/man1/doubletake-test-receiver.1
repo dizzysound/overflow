@@ -1,0 +1,237 @@
+.TH DOUBLETAKE-TEST-RECEIVER 1 "August 2026" "doubletake" "User Commands"
+.SH NAME
+doubletake-test-receiver \- diagnostic AirPlay mirroring receiver
+.SH SYNOPSIS
+.B doubletake-test-receiver
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B doubletake-test-receiver
+is a local AirPlay receiver for testing the real
+.B doubletake
+sender without an Apple TV or other receiver. It performs pairing, RTSP session
+setup, timing, event, video, and audio protocol handling, then drains incoming
+media while reporting activity statistics.
+.PP
+It is a diagnostic sink, not a media player: it does not display video or play
+audio. By default it listens only on the IPv4 loopback address.
+.SH PROTOCOL COVERAGE AND LIMITATIONS
+The profiles exercise independent pairing, SETUP-order, timing, FairPlay, and
+audio-layout combinations observed across first- and third-party receivers.
+.PP
+Profile names select synthetic receiver-side validation presets only. The
+sender does not branch on those names, or on the advertised receiver name,
+model, manufacturer, or an exact feature-mask fingerprint. It selects behavior
+from advertised capabilities, receiver implementation version where necessary,
+and the protocol that actually completes.
+.PP
+The sender always starts with the control-only SETUP sequence shown by Apple's
+sender artifacts. A fixture which explicitly rejects that control shape
+exercises one bounded transition to legacy media-first SETUP. Feature 59 affects
+only the initial audio descriptor: it selects
+.BR streamConnections ;
+its absence selects
+.BR controlPort .
+An explicit descriptor rejection permits one alternate-shape retry.
+.PP
+Encrypted HAP sessions use descriptor-only FairPlay keys. Plaintext/raw sessions
+carry the root FairPlay keys on the first accepted SETUP only; the legacy test
+profiles reject a later SETUP that repeats them, because UxPlay-derived
+receivers reset their NTP timing on it. NTP and PTP use the
+same presentation-latency policy; only their network-clock representation
+differs.
+A nonzero screen-audio mask advertising neither ALAC nor AAC-ELD is rejected
+when audio is enabled;
+.B \-no-audio
+keeps pairing, timing, control, and video available.
+.PP
+The modern profile omits display metadata from pre-session
+.BR /info ,
+then returns ordinary receiver information under the control SETUP response's
+.B info
+key when
+.B combinedGetInfoWithControlSetup
+is requested without a qualifier. This validates that the sender starts its
+encoder from the session-time nominal canvas, while treating separately
+advertised maximum dimensions only as an acceptance ceiling.
+.PP
+It parses the outer AirPlay video framing and counts video and audio traffic.
+The AppleTV3 and UxPlay profiles authenticate the FairPlay key, decrypt legacy
+AES-CTR video, and validate AVCC/NAL framing. It does not decode or display
+video or play audio; other encrypted media paths remain transport-only checks.
+This program is a diagnostic sink, not a media player or a
+receiver-compatibility substitute.
+.SH PROFILES
+.TP
+.B roku
+Advertise third-party/HKP pairing, PTP feature 41 with implementation version
+377.40.x, feature 59 absent, ALAC, and no FPSAP. It rejects the initial control
+SETUP to verify the single media-first transition and the narrow versioned NTP
+selection. Under authenticated HAP, the fixture rejects the initial
+.B controlPort
+audio shape and verifies the sender's single bounded
+.B streamConnections
+retry. This is the default.
+.TP
+.B modern
+Advertise CoreUtils HomeKit-style pairing, features 41 and 59, FPSAP, ALAC, and
+full PTP clock metadata. It verifies encrypted control and event channels,
+acceptance of the initial control SETUP, descriptor-only FairPlay keys, and a
+.B streamConnections
+audio descriptor. Pre-session
+.B /info
+omits displays; combined control SETUP info supplies a 1920x1080 nominal canvas
+and a distinct 3840x2160 maximum.
+.TP
+.B lg
+Advertise third-party/HKP HAP, feature-41 PTP with a working implementation
+version, feature 59 absent, and ALAC. It verifies encrypted control with
+one rejected control SETUP followed by media-first SETUP, a ChaCha key alongside
+the legacy audio control port, and the compatibility fallback which anchors a
+receiver ClockID locally when Apple's private PTP headers are absent. That
+fallback assumes the receiver uses the sender's numeric boot-clock phase; it is
+not equivalent to participating in a PTP clock domain.
+.TP
+.B appletv3
+Advertise raw pairing with feature 27, FPSAP, ALAC, and no PTP or feature 59. It
+rejects the initial control SETUP and verifies the one media-first transition,
+receiver-initiated NTP, the original raw FairPlay derivation, and plaintext
+root-level FairPlay keys.
+.TP
+.B uxplay
+Advertise raw pairing without feature 27, which verifies
+.B X-Apple-PD
+FairPlay-secret mixing, media-first NTP, ALAC, and an omitted optional
+.B eventPort
+in every SETUP response. It rejects the initial control SETUP to exercise the
+one media-first transition and validates plaintext root FairPlay keys.
+.TP
+.B airserver
+Advertise CoreUtils-like pairing capabilities but reject the HAP probe, which
+verifies the bounded raw-pairing fallback without identity matching. It also
+advertises feature 59 and only AAC-ELD screen audio, and verifies control-first
+SETUP by accepting the initial control request. Its plaintext feature-59
+.B streamConnections
+descriptor is rejected once and the alternate
+.B controlPort
+form is accepted. It also verifies sender-initiated NTP through the returned
+timing port and plaintext root-level FairPlay keys. The profile name
+.B airtame
+is accepted as an alias. The sender's AAC-ELD encoder is optional; install the
+.B libfdk-aac
+development files and build it with
+.B CGO_ENABLED=1 go build \-tags fdk_aac \-o bin/doubletake ./cmd/doubletake
+when testing audio with this profile. A normal build can exercise its video and
+control path with
+.BR \-no-audio .
+.SH AUTHENTICATION
+All authenticated modes use the single value supplied by
+.B \-code
+or
+.BR DOUBLETAKE_RECEIVER_CODE .
+The environment variable takes precedence over the command-line option.
+.TP
+.B none
+Allow transient pairing and do not challenge RTSP requests. A code must not be
+supplied. This is the default.
+.TP
+.B pin
+Advertise PIN-required pairing and use the code for SRP pair-setup. A
+.B /pair-pin-start
+request prints the configured code in the receiver log. RTSP Digest
+authentication is disabled.
+.TP
+.B password
+Use the code as the configured SRP pairing password without advertising an
+on-screen PIN. RTSP Digest authentication is disabled.
+.TP
+.B digest
+Allow transient pairing, then require RFC 2069 Digest authentication for media
+session requests using the configured code.
+.TP
+.B combined
+Use the code as a configured fixed password and require subsequent RTSP Digest
+authentication. Fixtures using the legacy/HKP pairing flow also consume it
+during SRP pair-setup; CoreUtils/HAP fixtures pair transiently and reserve it
+for Digest. This mode does not advertise or display an on-screen PIN.
+.SH OPTIONS
+.TP
+.B \-listen \fIADDRESS\fR
+TCP listen address for the AirPlay control connection. The default is
+.BR 127.0.0.1:7000 .
+Port 0 requests an ephemeral port; the actual bound address is printed at
+startup.
+.TP
+.B \-profile \fIPROFILE\fR
+Receiver-side validation preset: \fBmodern\fR, \fBroku\fR, \fBlg\fR,
+\fBappletv3\fR, \fBuxplay\fR, or \fBairserver\fR. The default is
+.BR roku .
+.TP
+.B \-auth \fIMODE\fR
+Authentication mode: \fBnone\fR, \fBpin\fR, \fBpassword\fR, \fBdigest\fR, or
+.BR combined .
+The default is \fBnone\fR.
+.TP
+.B \-code \fICODE\fR
+Unified pairing and/or Digest code selected by
+.BR \-auth .
+Authenticated modes require a non-empty code. Prefer the environment variable
+to avoid exposing the value in shell history and
+.BR ps (1)
+output.
+.TP
+.B \-name \fINAME\fR
+Receiver name advertised by
+.BR /info .
+An empty value uses the selected profile's default.
+.TP
+.B \-model \fIMODEL\fR
+Receiver model advertised by
+.BR /info .
+An empty value uses the selected profile's default.
+.TP
+.B \-device-id \fIIDENTIFIER\fR
+Receiver device ID advertised by
+.BR /info .
+An empty value generates a random locally administered identifier for this
+process.
+.TP
+.B \-debug
+Enable verbose receiver protocol logging.
+.TP
+.B \-stats-interval \fIDURATION\fR
+Print periodic protocol and media statistics using a Go duration such as
+\fB1s\fR or \fB500ms\fR. Zero disables periodic output. Final statistics are
+always printed.
+.TP
+.B \-h, \-help
+Show command-line help.
+.SH ENVIRONMENT
+.TP
+.B DOUBLETAKE_RECEIVER_CODE
+Pairing/password/Digest code. When set, including to an empty value, it takes
+precedence over
+.BR \-code .
+.SH EXAMPLES
+.TP
+Start the default Roku-profile receiver with a configured pairing password:
+.B DOUBLETAKE_RECEIVER_CODE=testpass doubletake-test-receiver \-profile roku \-auth password
+.TP
+Connect a synthetic sender using that password:
+.B DOUBLETAKE_CODE=testpass doubletake \-target 127.0.0.1 \-port 7000 \-test
+.TP
+Exercise modern pairing and Digest authentication with one shared fixed
+password (no on-screen PIN):
+.B DOUBLETAKE_RECEIVER_CODE=4827 doubletake-test-receiver \-profile modern \-auth combined \-stats-interval 2s
+.TP
+Run an unauthenticated receiver on an ephemeral port:
+.B doubletake-test-receiver \-listen 127.0.0.1:0
+.PP
+Copy the printed
+.I PORT
+into the sender invocation:
+.IP
+.B doubletake \-target 127.0.0.1 \-port PORT \-test
+.SH SEE ALSO
+.BR doubletake (1)
+.SH AUTHOR
+Written by Omar Roth.

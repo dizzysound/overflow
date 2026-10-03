@@ -1,0 +1,173 @@
+.TH DOUBLETAKE 1 "May 2026" "doubletake" "User Commands"
+.SH NAME
+doubletake \- AirPlay screen mirroring sender for Linux
+.SH SYNOPSIS
+.B doubletake
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B doubletake
+is an AirPlay screen mirroring sender that streams your Linux desktop to an Apple TV
+using the AirPlay mirroring protocol. It supports both Wayland (PipeWire/xdg-desktop-portal)
+and X11 screen capture with H.264 or capability-gated HEVC Main10 encoding.
+.SH FEATURES
+.IP \(bu 2
+Full AirPlay mirroring protocol (RTSP/HTTP + encrypted video stream)
+.IP \(bu 2
+FairPlay SAP authentication
+.IP \(bu 2
+SRP-6a pairing with PIN and persistent credential storage
+.IP \(bu 2
+H.264 encoding with NVENC, VA-API, OpenH264, and x264
+.IP \(bu 2
+Capability-gated HEVC Main10/high-resolution encoding with NVENC or x265
+.IP \(bu 2
+ChaCha20-Poly1305 stream encryption
+.IP \(bu 2
+mDNS device discovery
+.IP \(bu 2
+Daemon mode with multi-target streaming control via
+.B doubletake-ctl
+.SH OPTIONS
+.TP
+.B \-target \fIIP\fR
+Connect to a specific Apple TV by IP address (skips mDNS discovery)
+.TP
+.B \-port \fIPORT\fR
+AirPlay port (default: 7000)
+.TP
+.B \-code \fICODE\fR
+Pairing PIN shown on the receiver, or its configured password when
+"Require Password" is enabled. Prefer the
+.B DOUBLETAKE_CODE
+environment variable, which keeps the code out of shell history and
+.BR ps (1)
+output.
+.PP
+The entered value is retained across reconnects and is used for both SRP
+pairing and a later HTTP Digest challenge when the receiver requires both.
+.PP
+Interactive mode prompts only once after identifying the receiver's security
+mode. In the Plasma applet, an on-screen PIN uses a visible four-digit field and
+a configured receiver password uses an unrestricted masked field. Doubletake
+does not request an on-screen PIN in password mode.
+.TP
+.B \-port-range \fIMIN-MAX\fR
+Confine local timing and audio UDP sockets to a range of at least three ports,
+including streams started in daemon mode. Reserve three available ports per
+simultaneous receiver.
+.TP
+.B \-pair
+Force new pairing even if credentials exist
+.TP
+.B \-cred-backend \fIBACKEND\fR
+Credential storage backend: \fBfile\fR or \fBkeyring\fR (default: file)
+.TP
+.B \-creds \fIPATH\fR
+Path to credentials file (default: ~/.config/doubletake/credentials.json)
+.TP
+.B \-fps \fIFPS\fR
+Frames per second (default: 30)
+.TP
+.B \-bitrate \fIKBPS\fR
+Target bitrate in kbps (0 = auto, default: 0)
+.TP
+.B \-target-latency-ms \fIMS\fR
+Override both audio and video playout latency in milliseconds. Zero selects the
+automatic AirPlay policy with separate screen and audio defaults (default: 0).
+.TP
+.B \-no-audio
+Disable audio for video-only mirroring
+.TP
+.B \-hwaccel \fIMETHOD\fR
+Encoder preference: \fBauto\fR, \fBnvenc\fR (NVIDIA), \fBvaapi\fR
+(Intel/AMD), \fBopenh264\fR (software), or \fBnone\fR (x264, or x265 for
+forced HEVC).
+Only \fBauto\fR tries fallback encoders. An explicit method fails if its
+required GStreamer encoder is unavailable. The default is \fBauto\fR.
+.TP
+.B \-video-codec \fICODEC\fR
+Screen codec: capability-driven \fBauto\fR (default), forced \fBh264\fR, or
+forced \fBhevc\fR. Automatic HEVC requires receiver feature 42, a session-time
+maximum above 1920x1080, and the complete NVENC Main10/timestamp path;
+otherwise it uses H.264 at the nominal canvas. Forced HEVC may also use x265.
+The automatic hardware preflight measures sustained 4K capture-to-access-unit
+latency and increases both presentation leads by the same bounded margin when
+needed, preserving their relative synchronization.
+Main10 output does not fabricate HDR metadata for an SDR capture source.
+.TP
+.B \-debug
+Enable verbose protocol logging
+.TP
+.B \-daemonize
+Run in daemon mode for multi-target control via
+.B doubletake-ctl
+.SH EXAMPLES
+.TP
+Discover and connect to any Apple TV on the network:
+.B doubletake
+.TP
+Connect to a specific Apple TV:
+.B doubletake \-target 192.168.1.77
+.TP
+Pair with a PIN (saves credentials for reuse):
+.B doubletake \-target 192.168.1.77 \-pair \-code 1234
+.TP
+Connect to a receiver with "Require Password" enabled:
+.B DOUBLETAKE_CODE=... doubletake \-target 192.168.1.77
+.TP
+Stream with a custom frame rate and bitrate:
+.B doubletake \-target 192.168.1.77 \-fps 30 \-bitrate 4500
+.TP
+Force lower bitrate on weak Wi-Fi:
+.B doubletake \-target 192.168.1.77 \-bitrate 3000
+.TP
+Use hardware acceleration (NVIDIA):
+.B doubletake \-target 192.168.1.77 \-hwaccel nvenc
+.TP
+Use OpenH264 software encoding:
+.B doubletake \-target 192.168.1.77 \-hwaccel openh264
+.TP
+Run in daemon mode:
+.B doubletake \-daemonize
+.TP
+Debug mode with verbose logging:
+.B doubletake \-target 192.168.1.77 \-debug
+.SH DAEMON MODE
+When run with \fB\-daemonize\fR, doubletake runs as a background service that can control
+multiple simultaneous connections. Use
+.B doubletake-ctl
+to manage the daemon.
+.PP
+Daemon status distinguishes an on-screen PIN from a configured password so UI
+clients can present the appropriate single prompt. Both values remain
+submittable with the compatible
+.B doubletake-ctl pin
+command when exactly one receiver is waiting. For concurrent prompts, use
+.B doubletake-ctl connect \fITARGET\fR \fIPIN-OR-PASSWORD\fR
+to submit a credential to a specific receiver.
+.SH REQUIREMENTS
+.IP \(bu 2
+Go 1.23 or later
+.IP \(bu 2
+GStreamer 1.0 (with plugins-base, plugins-good, plugins-bad, plugins-ugly, libav)
+.IP \(bu 2
+The \fBopenh264\fR method requires the GStreamer \fBopenh264enc\fR element
+.IP \(bu 2
+PipeWire (Wayland) or X11 for screen capture
+.SH FILES
+.TP
+.I ~/.config/doubletake/credentials.json
+Default location for saved AirPlay credentials
+.SH SEE ALSO
+.BR doubletake-ctl (1),
+.BR doubletake-test-receiver (1)
+.SH AUTHOR
+Written by Omar Roth.
+.SH LICENSE
+License LGPLv3+: GNU LGPL version 3 or later.
+.PP
+Releases v0.3.2 and earlier were provided under GPLv3+: GNU GPL version 3 or later.
+.PP
+This is free software: you are free to change and redistribute it.
+.PP
+There is NO WARRANTY, to the extent permitted by law.

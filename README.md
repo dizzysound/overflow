@@ -1,0 +1,98 @@
+# Overflow
+
+**Send your OBS program output to the TVs in other rooms, several at once, over AirPlay.**
+
+Overflow is an OBS Studio plugin for overflow rooms, lobbies, cry rooms, fellowship halls, and any
+other place that needs to see and hear what's happening in the main room. It encodes the OBS program
+(video and audio) once and plays it on Apple TVs, Roku TVs and other AirPlay receivers, all at the
+same time. You need no capture cards, HDMI runs or second computer, and your live stream and
+recording are not affected.
+
+It was built for a church that streams its services with OBS and needed the same picture and sound
+on TVs in three other rooms.
+
+## Features
+
+- **Many rooms at once.** Check the displays you want and press Start. Group displays by location
+  and switch a whole room on or off with one checkbox.
+- **Apple TV and Roku.** AirPlay 2 with pairing (the on-screen code is asked for once and
+  remembered), plus legacy AirPlay receivers.
+- **Lip sync per room.** Each display has its own TV delay. In Auto mode the plugin raises the delay
+  when late video, late audio or network loss repeats.
+- **Its own encoder.** A dedicated H.264 encoder (NVENC, then AMD AMF, then Intel Quick Sync, then
+  x264), separate from your stream and recording settings.
+- **Hands-off operation.** Start automatically with OBS, with streaming or with recording.
+  Reconnects on its own when a TV or the network drops out, and has a per-display restart for a TV
+  woken from standby.
+- **Crash isolation.** AirPlay runs in a separate helper process. If it fails, OBS keeps running and
+  the plugin restarts the helper.
+- **Network friendly.** Media is DSCP-marked (EF for audio, AF41 for video) so switches and Wi-Fi
+  access points can prioritize it, and Wi-Fi-tolerant buffering can be turned on per display.
+
+## Supported receivers
+
+| Receiver | Status |
+|---|---|
+| Apple TV HD (AirPlay 2) | Tested |
+| Apple TV 4K | Untested; expected to work |
+| Roku TVs with AirPlay (tested: Hisense Roku TV) | Tested |
+| UxPlay-based receivers, including interactive panels with an AirPlay receiver app | Tested |
+| Other AirPlay 2 TVs (Samsung, LG, Vizio, Sony) | Untested; reports welcome |
+
+Some receivers accept only AAC-ELD audio; Overflow includes an AAC-ELD encoder for them.
+[Report how your receiver behaves](../../issues/new?template=receiver_report.yml).
+
+## Requirements
+
+- Windows 10 or 11 (64-bit) with OBS Studio 32.x. macOS and Linux builds compile in CI but are not
+  tested yet.
+- The PC and the receivers on the same network, or receivers added by IP address.
+
+## Install
+
+1. Close OBS.
+2. Download `obs-overflow-<version>-windows-x64.zip` from
+   [Releases](../../releases) and unzip it into `C:\ProgramData\obs-studio\plugins\`. No release
+   is published yet; until then, build it (see `plugin/README.md`) or use a CI artifact.
+3. Start OBS and open **Docks > Overflow**.
+
+Full instructions, upgrade steps and troubleshooting are in [`plugin/README.md`](plugin/README.md).
+
+## How it works
+
+```
+OBS program ──► obs-overflow (OBS plugin) ──pipes──► overflow-helper ──AirPlay──► Apple TV
+                 dock, settings, H.264 encoder         one session per display   ──► Roku TV
+                                                                                  ──► ...
+```
+
+The plugin (C++) encodes the program and supervises `overflow-helper` (Go), which runs one AirPlay
+session per display. The two talk over the helper's stdin and stdout; see
+[`docs/protocol.md`](docs/protocol.md).
+
+## Repository layout
+
+- `plugin/`: the OBS plugin, `obs-overflow`. Its logic lives in `plugin/core/` and builds and
+  tests without OBS.
+- `helper/`: `overflow-helper`, built from a fork of
+  [omarroth/doubletake](https://github.com/omarroth/doubletake) (LGPL-3.0), vendored as a git
+  subtree. Pull upstream fixes with
+  `git subtree pull --prefix=helper https://github.com/omarroth/doubletake.git main --squash`.
+- `eld-encoder/`: the AAC-ELD audio encoder for receivers that need it.
+- `docs/protocol.md`: the wire protocol between the plugin and the helper.
+
+## Contributing
+
+Bug reports, receiver compatibility reports and pull requests are welcome. See
+[CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately, as described in
+[SECURITY.md](SECURITY.md).
+
+## License and credits
+
+GPLv3 (see `LICENSE`). Code under `helper/` is LGPL-3.0 (see `helper/LICENSE`). `eld-encoder` links
+the Fraunhofer FDK AAC library and ships under its license (see `eld-encoder/LICENSE-NOTICE.md`).
+
+The AirPlay sender is built on [doubletake](https://github.com/omarroth/doubletake) by Omar Roth.
+
+AirPlay, Apple TV and Apple are trademarks of Apple Inc. Roku is a trademark of Roku, Inc. Overflow
+is not affiliated with or endorsed by either company.
