@@ -117,11 +117,11 @@ jobs:
         working-directory: plugin
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: overflow-helper-windows
           path: plugin/helper-bin
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: eld-encoder-windows
           path: plugin/helper-bin
