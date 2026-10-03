@@ -87,6 +87,14 @@ Bug reports, receiver compatibility reports and pull requests are welcome. See
 [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately, as described in
 [SECURITY.md](SECURITY.md).
 
+## Use of AI tools
+
+Most of Overflow's own code, tests and documentation were written with Claude Code, Anthropic's AI
+coding tool, working from my requirements and design decisions. Automated tests cover the plugin
+logic and the helper, and the builds that run at the church were tested there on real receivers. The
+AirPlay sender it builds on, doubletake, is a separate upstream project and isn't covered by this
+note. Please judge the code on its merits, and report problems through the issue forms.
+
 ## License and credits
 
 GPLv3 (see `LICENSE`). Code under `helper/` is LGPL-3.0 (see `helper/LICENSE`). `eld-encoder` links
