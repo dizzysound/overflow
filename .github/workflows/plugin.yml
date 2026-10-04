@@ -93,7 +93,7 @@ jobs:
       - name: Install mingw-w64
         run: sudo apt-get update && sudo apt-get install -y mingw-w64
       - name: Cache the fdk-aac source tarball
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: eld-encoder/build/fdk-aac-2.0.3.tar.gz
           key: fdk-aac-2.0.3-${{ hashFiles('eld-encoder/build.sh') }}
@@ -126,7 +126,7 @@ jobs:
           name: eld-encoder-windows
           path: plugin/helper-bin
       - name: Cache OBS build dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: plugin/.deps
           key: obs-deps-windows-x64-${{ hashFiles('plugin/buildspec.json') }}
@@ -197,12 +197,12 @@ jobs:
           go-version: '1.27.x'
           cache-dependency-path: helper/go.sum
       - name: Cache OBS build dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: plugin/.deps
           key: obs-deps-macos-${{ hashFiles('plugin/buildspec.json') }}
       - name: Cache the fdk-aac source tarball
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: eld-encoder/build/fdk-aac-2.0.3.tar.gz
           key: fdk-aac-2.0.3-${{ hashFiles('eld-encoder/build.sh') }}
@@ -248,7 +248,7 @@ jobs:
             libqt6svg6-dev \
             qt6-base-private-dev
       - name: Cache the fdk-aac source tarball
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: eld-encoder/build/fdk-aac-2.0.3.tar.gz
           key: fdk-aac-2.0.3-${{ hashFiles('eld-encoder/build.sh') }}
