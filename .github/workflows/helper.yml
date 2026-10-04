@@ -39,8 +39,8 @@ jobs:
       # The shipped Windows helper is built without cgo; test what ships.
       CGO_ENABLED: '0'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: '1.27.x'
           cache-dependency-path: helper/go.sum
@@ -59,14 +59,14 @@ jobs:
       run:
         working-directory: helper
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: '1.27.x'
           cache-dependency-path: helper/go.sum
       - name: make helper-windows
         run: make helper-windows
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: overflow-helper-windows
           path: |
