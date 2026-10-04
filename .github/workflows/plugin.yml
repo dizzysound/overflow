@@ -62,7 +62,7 @@ jobs:
           cache-dependency-path: helper/go.sum
       - name: make helper-windows
         run: make -C helper helper-windows
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: overflow-helper-windows
           path: helper/bin/windows/overflow-helper.exe
@@ -79,7 +79,7 @@ jobs:
           cache-dependency-path: helper/go.sum
       - name: make helper-linux
         run: make -C helper helper-linux
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: overflow-helper-linux
           path: helper/bin/linux/overflow-helper
@@ -99,7 +99,7 @@ jobs:
           key: fdk-aac-2.0.3-${{ hashFiles('eld-encoder/build.sh') }}
       - name: build.sh windows
         run: ./eld-encoder/build.sh windows
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: eld-encoder-windows
           path: |
@@ -161,13 +161,13 @@ jobs:
         run: |
           $Version = (Get-Content buildspec.json -Raw | ConvertFrom-Json).version
           Compress-Archive -Path release/RelWithDebInfo/* -DestinationPath "release/obs-overflow-$Version-windows-x64.zip" -Force
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: obs-overflow-windows-x64
           path: plugin/release/obs-overflow-*-windows-x64.zip
           if-no-files-found: error
       # Plan 3's installer job consumes this tree.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: obs-overflow-windows-x64-tree
           path: plugin/release/RelWithDebInfo
@@ -211,7 +211,7 @@ jobs:
       # and signature.
       - name: Package
         run: tools/package-macos.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: obs-overflow-macos-universal
           path: |
@@ -256,7 +256,7 @@ jobs:
       # OBS's per-user plugin layout.
       - name: Package
         run: tools/package-linux.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: obs-overflow-linux-x86_64
           path: plugin/release/obs-overflow-*-linux-x86_64.tar.gz
