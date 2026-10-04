@@ -288,7 +288,8 @@ uint64_t Controller::lead_audio_age_ns() const
 	return live > 0 ? live : static_cast<uint64_t>(settings_.global.last_audio_age_ms) * 1000000ull;
 }
 
-int Controller::lead_for(const airplay::DisplaySettings &d, int video_need_ms, int late_floor_ms) const
+int Controller::lead_for(const airplay::DisplaySettings &d, int video_need_ms, int late_floor_ms,
+			 bool with_run_lead) const
 {
 	airplay::LeadInputs in;
 	in.fixed_ms = d.latency_ms;
@@ -298,7 +299,8 @@ int Controller::lead_for(const airplay::DisplaySettings &d, int video_need_ms, i
 	in.audio_age_ns = lead_audio_age_ns();
 	in.video_need_ms = video_need_ms;
 	in.late_floor_ms = late_floor_ms;
-	in.saved_lead_ms = live_lead_ && auto_lead(d) ? d.saved_lead_ms : 0;
+	const int saved = with_run_lead ? run_leads_.start_lead_ms(d.device_id, d.saved_lead_ms) : d.saved_lead_ms;
+	in.saved_lead_ms = live_lead_ && auto_lead(d) ? saved : 0;
 	return airplay::display_lead_ms(in);
 }
 
@@ -484,7 +486,10 @@ void Controller::on_delivery(const airplay::DeliveryEvent &dv)
 		}
 		// Saved on a raise, or when it moved by 5 ms or more: not every 5 s window.
 		const int next = it->second.next_start_ms();
-		if (next != d->saved_lead_ms && (target > prev_target || std::abs(next - d->saved_lead_ms) >= 5)) {
+		// Not while a ceiling reconnect's run lead holds: that session's
+		// start is this run's, not the next one's.
+		if (!run_leads_.holds(d->device_id) && next != d->saved_lead_ms &&
+		    (target > prev_target || std::abs(next - d->saved_lead_ms) >= 5)) {
 			d->saved_lead_ms = next;
 			save_settings();
 		}
@@ -518,10 +523,11 @@ bool Controller::guard_ceiling(airplay::DisplaySettings &d, const airplay::Deliv
 	const bool fixed = !auto_lead(d);
 	const bool may_reconnect =
 		live_lead_ && !fixed && dv.lead_ceiling_ms > 0 && view_->session_restartable(d.device_id);
-	// What a fresh session would start at now, from the live audio age.
+	// What a fresh session would start at now, from the live audio age: no
+	// saved lead and no run lead.
 	airplay::DisplaySettings fresh = d;
 	fresh.saved_lead_ms = 0;
-	const int wanted = lead_for(fresh, d.video_need_ms, d.late_floor_ms);
+	const int wanted = lead_for(fresh, d.video_need_ms, d.late_floor_ms, false);
 
 	airplay::CeilingGuard &guard = ceiling_guards_[d.device_id];
 	const bool was_exhausted = guard.exhausted();
@@ -540,14 +546,15 @@ bool Controller::guard_ceiling(airplay::DisplaySettings &d, const airplay::Deliv
 		    std::to_string(guard.need_ms()) + " ms, above its session's ceiling " + std::to_string(ceiling) +
 		    " ms; reconnect " + std::to_string(guard.reconnects()) + " of " +
 		    std::to_string(airplay::CeilingGuard::kMaxReconnects) + " this run)");
-	// The saved lead is where an Auto display's next session starts (lead_for);
-	// Auto dynamic lowers it again once the need falls.
-	d.saved_lead_ms = step.reconnect_ms;
+	// The new session and any reconnect later in this OBS run start here
+	// (lead_for). Not saved_lead_ms: that would start next Sunday's run at
+	// this lead after OBS has dropped the buffering, and Auto raise only
+	// lowers a saved lead by just 10 ms a session (2026-10-04: 297 -> ~440).
+	run_leads_.set(d.device_id, step.reconnect_ms);
 	applied_leads_[d.device_id] = step.reconnect_ms;
 	live_leads_.erase(d.device_id);
 	live_effective_.erase(d.device_id);
 	at_floor_logged_.erase(d.device_id);
-	save_settings();
 	// set_displays carries the new lead first, so the restart reconnects with it.
 	resync_displays(false);
 	supervisor_->send_command(airplay::restart_command(d.device_id));

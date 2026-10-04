@@ -63,6 +63,22 @@ int reconnect_lead_ms(int wanted_ms, int need_ms)
 	return std::clamp(lead, kLeadFloorMs, kLeadCeilingMs);
 }
 
+void RunLeads::set(const std::string &device_id, int lead_ms)
+{
+	leads_[device_id] = lead_ms;
+}
+
+bool RunLeads::holds(const std::string &device_id) const
+{
+	return leads_.count(device_id) > 0;
+}
+
+int RunLeads::start_lead_ms(const std::string &device_id, int saved_lead_ms) const
+{
+	const auto it = leads_.find(device_id);
+	return it == leads_.end() ? saved_lead_ms : std::max(saved_lead_ms, it->second);
+}
+
 std::string ceiling_warning_text(const std::string &display_name, const CeilingGuard &guard, bool fixed)
 {
 	std::string text = display_name + ": audio or video dropped late: needs about " +

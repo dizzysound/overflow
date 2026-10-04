@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
 #include <string>
 
 namespace airplay {
@@ -72,6 +73,31 @@ private:
 // The lead to reconnect at: the larger of wanted_ms and need_ms plus the
 // margin, rounded up to 5 ms, within [kLeadFloorMs, kLeadCeilingMs].
 int reconnect_lead_ms(int wanted_ms, int need_ms);
+
+// The leads ceiling reconnects asked for, per display, for one OBS run.
+//
+// The audio buffering OBS added lasts until OBS restarts, so a reconnect's
+// lead must hold for the rest of the run but must never be saved as the next
+// run's starting lead: Auto lowers a saved lead by only 10 ms a session, so
+// next Sunday would open the display at this run's lead for nothing
+// (2026-10-04: a saved 197 ms would have become about 440 ms).
+class RunLeads {
+public:
+	// A ceiling reconnect asked for this lead. A later reconnect replaces it,
+	// up or down: it is computed from the need at the time.
+	void set(const std::string &device_id, int lead_ms);
+
+	// True while a reconnect lead holds for this display: its current lead
+	// belongs to this run, so do not save it as the next session's start.
+	bool holds(const std::string &device_id) const;
+
+	// Auto's starting lead for display_lead_ms: the saved lead, raised to
+	// this run's reconnect lead while one holds.
+	int start_lead_ms(const std::string &device_id, int saved_lead_ms) const;
+
+private:
+	std::map<std::string, int> leads_;
+};
 
 // Dock and log text for a display in the warning state, e.g. "Narthex: audio
 // dropped late: needs about 400 ms, above this display's most TV delay of 297

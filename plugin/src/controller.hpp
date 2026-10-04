@@ -107,7 +107,10 @@ private:
 	{
 		return d.latency_ms == 0 && settings_.global.target_latency_ms == 0;
 	}
-	int lead_for(const airplay::DisplaySettings &d, int video_need_ms, int late_floor_ms) const;
+	// with_run_lead false leaves out this run's ceiling reconnect lead, for
+	// the lead a fresh session would start at now (guard_ceiling).
+	int lead_for(const airplay::DisplaySettings &d, int video_need_ms, int late_floor_ms,
+		     bool with_run_lead = true) const;
 	// The OBS audio age for leads: the live one once the tap reports, else the
 	// last run's.
 	uint64_t lead_audio_age_ns() const;
@@ -204,6 +207,10 @@ private:
 	// Per display, for this plugin run: a need above the session's ceiling
 	// (audio dropped late, 2026-10-04), its warning and its reconnects.
 	std::map<std::string, airplay::CeilingGuard> ceiling_guards_;
+	// A ceiling reconnect's lead, for the rest of this OBS run only: the audio
+	// buffering OBS added lasts until OBS restarts, so it is never saved as
+	// the next run's starting lead.
+	airplay::RunLeads run_leads_;
 	std::map<std::string, airplay::AudioLoss> audio_loss_; // per device: resend requests, for the status text
 	// Displays with a late-frame raise that update_leads() has not handled yet.
 	std::set<std::string> late_raised_;

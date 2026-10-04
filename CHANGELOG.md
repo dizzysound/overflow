@@ -5,6 +5,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- A TV delay raised by a ceiling reconnect now holds only until OBS closes, which is when OBS drops
+  the audio buffering that caused it. It was kept as that display's starting delay for the next
+  time, and Auto lowers a saved delay by only 10 ms a session, so a service that hit the ceiling
+  once would have opened that display hundreds of milliseconds late for weeks afterwards.
+
 ## [0.2.0] - 2026-10-04
 
 ### Added
@@ -29,8 +36,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - When OBS adds audio buffering mid-session (seen on 2026-10-04: +362 ms for an NDI source) and an
   Auto display's TV delay can no longer reach what the audio needs, Overflow now says so in the
   dock and the OBS log, and after 30 s reconnects that display with a higher TV delay (at most
-  three times per run, 5 and 20 minutes apart). Before, it dropped that display's audio as late for
-  the rest of the session without a warning. A fixed TV delay gets the warning only.
+  three times per run, 5 and 20 minutes apart). Before, it dropped that display's audio as late for the rest of the session without a warning. A
+  fixed TV delay gets the warning only.
 - macOS: entering a pairing code no longer leaves an empty "Overflow" window behind (verified
   with a reproduction and a test; not yet re-run in OBS).
 - The helper no longer uses a full CPU core when the computer has no network (Wi-Fi off, cable
