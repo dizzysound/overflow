@@ -126,7 +126,7 @@ export -f cc_one; export LLVM WARN_LOG
 jobs_file="$B/jobs.txt"; : > "$jobs_file"
 CORE_OBJS=(); PLUGIN_OBJS=()
 for s in "$P"/core/src/*.cpp; do
-  [ "$(basename "$s")" = process_posix.cpp ] && continue
+  case "$(basename "$s")" in process_posix.cpp | secret_macos.cpp | secret_linux.cpp) continue ;; esac # not Windows sources
   o="$B/obj/core_$(basename "$s" .cpp).obj"; CORE_OBJS+=("$o")
   printf '%s\0' "$s" "$o" "core" >> "$jobs_file"
 done

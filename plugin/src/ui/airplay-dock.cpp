@@ -473,7 +473,14 @@ void AirPlayDock::save_diagnostic_log()
 void AirPlayDock::prompt_credential(const QString &device_id, const QString &display_name, const QString &kind,
 				    bool retry)
 {
-	auto *dialog = new CredentialDialog(display_name, kind, retry, backend_->can_remember_passwords(), this);
+	// open() is window-modal: on macOS a sheet on the parent's window. OBS
+	// keeps a dock it has never shown as a hidden floating window, and a sheet
+	// on that makes AppKit show it while Qt still thinks it is hidden, which
+	// leaves an empty "Overflow" window behind. Anchor on the main window then.
+	QWidget *parent = this;
+	if (!window()->isVisible() && window()->parentWidget())
+		parent = window()->parentWidget()->window();
+	auto *dialog = new CredentialDialog(display_name, kind, retry, backend_->can_remember_passwords(), parent);
 	dialog->setAttribute(Qt::WA_DeleteOnClose); // deleted with deleteLater, after these slots run
 	const std::string id = device_id.toStdString();
 	connect(dialog, &QDialog::accepted, this, [this, dialog, id] {

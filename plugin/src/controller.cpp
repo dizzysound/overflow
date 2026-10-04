@@ -661,7 +661,7 @@ void Controller::resync_displays(bool force)
 	displays_sent_ = true;
 }
 
-void Controller::save_settings()
+bool Controller::save_settings()
 {
 	// Learned values stay within what settings_from_json accepts back.
 	for (airplay::DisplaySettings &d : settings_.displays) {
@@ -669,8 +669,18 @@ void Controller::save_settings()
 		d.late_floor_ms = std::clamp(d.late_floor_ms, 0, airplay::kLeadCeilingMs);
 	}
 	std::string error;
-	if (!airplay::save_settings_file(paths_.settings_file, settings_, &error))
+	if (!airplay::save_settings_file(paths_.settings_file, settings_, &error)) {
 		log(airplay::LogLevel::Error, "could not save settings: " + error);
+		return false;
+	}
+	// settings.json no longer names these blobs; their OS-store items can go.
+	if (view_)
+		for (const std::string &blob : view_->take_pending_discards())
+			pending_discards_.push_back(blob);
+	for (const std::string &blob : pending_discards_)
+		secrets_->discard(blob);
+	pending_discards_.clear();
+	return true;
 }
 
 void Controller::note_activity()
@@ -1019,6 +1029,9 @@ void Controller::remove_display(const std::string &device_id)
 {
 	// Removing the entry drops it from selection_for()'s input; resync_displays
 	// below picks that up and, if it was enabled, sends the smaller set.
+	if (const airplay::DisplaySettings *d = settings_.find_display(device_id))
+		if (!d->password_protected.empty())
+			pending_discards_.push_back(d->password_protected); // its OS-store item, after the save
 	settings_.remove_display(device_id);
 	save_settings();
 	resync_displays(false);

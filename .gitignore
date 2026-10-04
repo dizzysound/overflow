@@ -15,3 +15,7 @@ data/**/recordings/
 data/packages/
 
 .DS_Store
+
+# raw OBS logs from the macOS/Linux port tests may contain session keys
+data/2026-10-03-macos-linux-port/**/*.log
+data/2026-10-03-macos-linux-port/linux-emulated-baseline/release/

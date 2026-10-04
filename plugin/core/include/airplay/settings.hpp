@@ -49,7 +49,7 @@ struct DisplaySettings {
 	int manual_port = 0;             // 0: the helper's default, 7000
 	IdlePolicy idle_policy = IdlePolicy::DisconnectWhenOutputStops;
 	int idle_minutes = 30;
-	std::string password_protected; // base64 of a DPAPI blob; empty = none
+	std::string password_protected; // SecretProtector blob (secret.hpp); empty = none
 	// Program scenes (by name) on which this display disconnects. Streaming
 	// and recording are unaffected; the display reconnects on other scenes.
 	std::vector<std::string> skip_scenes;

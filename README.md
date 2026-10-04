@@ -52,7 +52,7 @@ Per-display settings, and the plugin's settings.
 | Receiver | Status |
 |---|---|
 | Apple TV HD (AirPlay 2) | Tested |
-| Apple TV 4K | Untested; expected to work |
+| Apple TV 4K (3rd generation; AAC-ELD audio) | Tested (from macOS) |
 | Roku TVs with AirPlay (tested: Hisense Roku TV) | Tested |
 | UxPlay-based receivers, including interactive panels with an AirPlay receiver app | Tested |
 | Other AirPlay 2 TVs (Samsung, LG, Vizio, Sony) | Untested; reports welcome |
@@ -62,19 +62,32 @@ Some receivers accept only AAC-ELD audio; Overflow includes an AAC-ELD encoder f
 
 ## Requirements
 
-- Windows 10 or 11 (64-bit) with OBS Studio 32.x. macOS and Linux builds compile in CI but are not
-  tested yet.
-- The PC and the receivers on the same network, or receivers added by IP address.
+- OBS Studio 32.x on one of:
+  - Windows 10 or 11, 64-bit.
+  - macOS 13 or later, Apple silicon or Intel.
+  - Linux x86_64 (built on Ubuntu 24.04 against OBS from the OBS PPA; tests pass and it loads in
+    OBS, but it has had only a short receiver test on a slow headless machine).
+- The computer and the receivers on the same network, or receivers added by IP address.
+
+The Windows build runs at the church Overflow was written for. The macOS and Linux builds are new;
+[`plugin/README.md`](plugin/README.md) says what has been tested on each.
 
 ## Install
 
-1. Close OBS.
-2. Download `obs-overflow-<version>-windows-x64.zip` from
-   [Releases](../../releases) and unzip it into `C:\ProgramData\obs-studio\plugins\`. No release
-   is published yet; until then, build it (see `plugin/README.md`) or use a CI artifact.
-3. Start OBS and open **Docks > Overflow**.
+Download the file for your system from [Releases](../../releases), close OBS, then:
 
-Full instructions, upgrade steps and troubleshooting are in [`plugin/README.md`](plugin/README.md).
+- **Windows:** extract `obs-overflow-<version>-windows-x64.zip` into
+  `%ProgramData%\obs-studio\plugins\` (normally `C:\ProgramData\obs-studio\plugins\`), so that
+  `...\plugins\obs-overflow\bin\64bit\obs-overflow.dll` exists. Portable OBS uses a different
+  folder; see [`plugin/README.md`](plugin/README.md#windows).
+- **macOS:** open `obs-overflow-<version>-macos-universal.pkg`. It is not notarized, so macOS
+  blocks it the first time: open **System Settings > Privacy & Security** and click **Open Anyway**.
+- **Linux:** extract `obs-overflow-<version>-linux-x86_64.tar.gz` into
+  `~/.config/obs-studio/plugins/` (for the OBS Flatpak,
+  `~/.var/app/com.obsproject.Studio/config/obs-studio/plugins/`).
+
+Start OBS and open **Docks > Overflow**. Full instructions, upgrade steps and troubleshooting are in
+[`plugin/README.md`](plugin/README.md).
 
 ## How it works
 

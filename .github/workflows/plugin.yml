@@ -192,21 +192,35 @@ jobs:
           sudo xcode-select --switch "$XCODE/Contents/Developer"
           xcodebuild -version
           xcrun --show-sdk-version
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache-dependency-path: helper/go.sum
       - name: Cache OBS build dependencies
         uses: actions/cache@v4
         with:
           path: plugin/.deps
           key: obs-deps-macos-${{ hashFiles('plugin/buildspec.json') }}
-      - name: Configure
-        run: cmake --preset macos-ci -DENABLE_CCACHE=OFF
-      - name: Build
-        run: cmake --build --preset macos-ci
+      - name: Cache the fdk-aac source tarball
+        uses: actions/cache@v4
+        with:
+          path: eld-encoder/build/fdk-aac-2.0.3.tar.gz
+          key: fdk-aac-2.0.3-${{ hashFiles('eld-encoder/build.sh') }}
+      # Builds the universal helper and eld-encoder, the plugin bundle with
+      # both inside, the .pkg and the .zip, and checks layout, architectures
+      # and signature.
+      - name: Package
+        run: tools/package-macos.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: obs-overflow-macos-universal
+          path: |
+            plugin/release/obs-overflow-*-macos-universal.pkg
+            plugin/release/obs-overflow-*-macos-universal.zip
+          if-no-files-found: error
 
   plugin-linux:
     name: plugin (linux)
-    # No eld-encoder on Linux yet (eld-encoder/build.sh has no Linux target); the
-    # helper already runs video-only without it, so this job needs no helper
-    # or eld-encoder artifact. Packaging (.deb/Flatpak) is a later Linux plan.
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -214,12 +228,17 @@ jobs:
         working-directory: plugin
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache-dependency-path: helper/go.sum
       - name: Install OBS and Qt 6 build dependencies
         run: |
           sudo add-apt-repository --yes ppa:obsproject/obs-studio
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential \
+            file \
             ninja-build \
             pkg-config \
             libgles2-mesa-dev \
@@ -228,14 +247,17 @@ jobs:
             qt6-base-dev \
             libqt6svg6-dev \
             qt6-base-private-dev
-      - name: Configure
-        run: cmake --preset ubuntu-ci-x86_64 -DENABLE_CCACHE=OFF
-      - name: Build
-        run: cmake --build --preset ubuntu-ci-x86_64 --parallel
-      - name: Install
-        run: cmake --install build_x86_64 --prefix release/RelWithDebInfo
+      - name: Cache the fdk-aac source tarball
+        uses: actions/cache@v4
+        with:
+          path: eld-encoder/build/fdk-aac-2.0.3.tar.gz
+          key: fdk-aac-2.0.3-${{ hashFiles('eld-encoder/build.sh') }}
+      # Builds the helper, eld-encoder and plugin, and assembles the tarball in
+      # OBS's per-user plugin layout.
+      - name: Package
+        run: tools/package-linux.sh
       - uses: actions/upload-artifact@v4
         with:
           name: obs-overflow-linux-x86_64
-          path: plugin/release/RelWithDebInfo/**
+          path: plugin/release/obs-overflow-*-linux-x86_64.tar.gz
           if-no-files-found: error

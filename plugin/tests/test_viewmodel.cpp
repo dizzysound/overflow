@@ -23,6 +23,8 @@ public:
 			return std::nullopt;
 		return blob.substr(4);
 	}
+	void discard(const std::string &blob) const override { discarded.push_back(blob); }
+	mutable std::vector<std::string> discarded;
 };
 
 // R6: a non-Windows protector before secure storage is wired up. available()
@@ -180,6 +182,30 @@ TEST_CASE("a rejected cached password falls back to asking, marked as a retry")
 	f.display(R"({"event":"display","device_id":"A","state":"credential","credential_kind":"password"})");
 	REQUIRE(f.prompts.size() == 1);
 	CHECK(f.prompts[0].retry);
+}
+
+TEST_CASE("a replaced or forgotten saved password is queued for discard, not discarded")
+{
+	// The OS-store item may go only after settings.json stops naming it; the
+	// controller discards what take_pending_discards() returns after a save.
+	Fixture f;
+	DisplaySettings &r = f.settings.ensure_display("A", "Roku");
+	r.enabled = true;
+	r.password_protected = "enc:old";
+	f.display(R"({"event":"display","device_id":"A","state":"credential","credential_kind":"password"})");
+	f.display(R"({"event":"display","device_id":"A","state":"retrying","error":"wrong password"})");
+	f.display(R"({"event":"display","device_id":"A","state":"credential","credential_kind":"password"})");
+	REQUIRE(f.prompts.size() == 1);
+	f.vm.answer_credential("A", "new", true);
+	CHECK(f.settings.find_display("A")->password_protected == "enc:new");
+	CHECK(f.secrets.discarded.empty());
+	CHECK(f.vm.take_pending_discards() == std::vector<std::string>{"enc:old"});
+	CHECK(f.vm.take_pending_discards().empty());
+
+	f.vm.forget_password("A");
+	CHECK(f.settings.find_display("A")->password_protected.empty());
+	CHECK(f.vm.take_pending_discards() == std::vector<std::string>{"enc:new"});
+	CHECK(f.secrets.discarded.empty());
 }
 
 TEST_CASE("cancel, restart, reconnect and forget")

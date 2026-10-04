@@ -4,6 +4,7 @@
 #include "airplay/secret.hpp"
 
 #include <cstddef>
+#include <random>
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -74,16 +75,43 @@ public:
 		return plain;
 	}
 };
-#else
-class UnavailableProtector final : public SecretProtector {
-public:
-	bool available() const override { return false; }
-	std::optional<std::string> protect(const std::string &) const override { return std::nullopt; }
-	std::optional<std::string> unprotect(const std::string &) const override { return std::nullopt; }
-};
 #endif
 
 } // namespace
+
+#if defined(__APPLE__)
+std::unique_ptr<SecretProtector> make_keychain_protector(); // secret_macos.cpp
+#elif !defined(_WIN32)
+std::unique_ptr<SecretProtector> make_libsecret_protector(); // secret_linux.cpp
+#endif
+
+std::string store_item_id(const std::string &blob, const std::string &prefix)
+{
+	constexpr std::size_t kIdLength = 32;
+	if (blob.size() != prefix.size() + 1 + kIdLength || blob.compare(0, prefix.size(), prefix) != 0 ||
+	    blob[prefix.size()] != ':')
+		return {};
+	const std::string id = blob.substr(prefix.size() + 1);
+	for (const char c : id)
+		if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
+			return {};
+	return id;
+}
+
+std::string new_store_item_id()
+{
+	// An item name, not a secret: std::random_device is enough.
+	static const char kHex[] = "0123456789abcdef";
+	std::random_device rd;
+	std::string id;
+	id.reserve(32);
+	for (int i = 0; i < 4; ++i) {
+		uint32_t v = rd();
+		for (int k = 0; k < 8; ++k, v >>= 4)
+			id.push_back(kHex[v & 15]);
+	}
+	return id;
+}
 
 std::string base64_encode(const std::vector<uint8_t> &data)
 {
@@ -149,10 +177,12 @@ std::optional<std::vector<uint8_t>> base64_decode(const std::string &text)
 
 std::unique_ptr<SecretProtector> make_platform_protector()
 {
-#ifdef _WIN32
+#if defined(_WIN32)
 	return std::make_unique<DpapiProtector>();
+#elif defined(__APPLE__)
+	return make_keychain_protector();
 #else
-	return std::make_unique<UnavailableProtector>();
+	return make_libsecret_protector();
 #endif
 }
 

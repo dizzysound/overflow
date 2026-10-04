@@ -47,12 +47,18 @@ func TestConsecutiveUDPPortsAreMarked(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		var tclass int
+		// The "udp" listener is dual-stack IPv6 normally, but plain IPv4 on a
+		// host booted with ipv6.disable=1; check the option that family uses.
+		level, opt, name := syscall.IPPROTO_IPV6, syscall.IPV6_TCLASS, "IPV6_TCLASS"
+		if addr, ok := c.LocalAddr().(*net.UDPAddr); ok && addr.IP.To4() != nil {
+			level, opt, name = syscall.IPPROTO_IP, syscall.IP_TOS, "IP_TOS"
+		}
+		var class int
 		_ = raw.Control(func(fd uintptr) {
-			tclass, _ = syscall.GetsockoptInt(int(fd), syscall.IPPROTO_IPV6, syscall.IPV6_TCLASS)
+			class, _ = syscall.GetsockoptInt(int(fd), level, opt)
 		})
-		if tclass != dscpAudio<<2 {
-			t.Fatalf("socket %d IPV6_TCLASS = 0x%x, want 0x%x", i, tclass, dscpAudio<<2)
+		if class != dscpAudio<<2 {
+			t.Fatalf("socket %d %s = 0x%x, want 0x%x", i, name, class, dscpAudio<<2)
 		}
 	}
 }

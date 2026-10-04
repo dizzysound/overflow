@@ -24,6 +24,10 @@ if(NOT DEFINED PLUGIN_BUILD_NUMBER)
       else()
         set(PLUGIN_BUILD_NUMBER "1")
       endif()
+    else()
+      # A local first configure: without this the number stays empty and the
+      # macOS set_target_properties_plugin() call gets too few arguments.
+      set(PLUGIN_BUILD_NUMBER "1")
     endif()
   endif()
   file(WRITE "${_BUILD_NUMBER_CACHE}" "${PLUGIN_BUILD_NUMBER}")

@@ -15,11 +15,13 @@
 #include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QDockWidget>
 #include <QDoubleSpinBox>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QMainWindow>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPushButton>
@@ -232,6 +234,40 @@ TEST_CASE("the hint label points to Add display... when no displays are found ye
 	REQUIRE(hint);
 	CHECK(hint->text() == QStringLiteral("No displays found yet. They appear here as they are discovered, or use "
 					      "Add display... to enter one by address."));
+}
+
+TEST_CASE("a credential prompt from a hidden floating dock opens on the main window")
+{
+	// OBS adds docks floating and hidden; a sheet on that hidden window left an
+	// empty window behind on macOS.
+	FakeBackend b;
+	QMainWindow main_window;
+	main_window.show();
+	auto *dock = new AirPlayDock(&b, &main_window);
+	auto *frame = new QDockWidget(QStringLiteral("Overflow"));
+	frame->setWidget(dock);
+	main_window.addDockWidget(Qt::RightDockWidgetArea, frame);
+	frame->setFloating(true);
+	frame->setVisible(false);
+
+	dock->prompt_credential(QStringLiteral("A"), QStringLiteral("Living Room"), QStringLiteral("pin"), false);
+	CredentialDialog *dialog = nullptr;
+	for (QDialog *d : main_window.findChildren<QDialog *>())
+		if (auto *c = dynamic_cast<CredentialDialog *>(d))
+			dialog = c;
+	REQUIRE(dialog);
+	CHECK(dialog->parentWidget() == &main_window);
+	dialog->reject();
+
+	frame->setVisible(true); // a shown dock keeps the prompt beside it
+	dock->prompt_credential(QStringLiteral("A"), QStringLiteral("Living Room"), QStringLiteral("pin"), false);
+	CredentialDialog *beside = nullptr;
+	for (QDialog *d : main_window.findChildren<QDialog *>())
+		if (d->parentWidget() == dock)
+			beside = dynamic_cast<CredentialDialog *>(d);
+	CHECK(beside);
+	if (beside)
+		beside->reject();
 }
 
 TEST_CASE("Start/Stop toggles through the backend")

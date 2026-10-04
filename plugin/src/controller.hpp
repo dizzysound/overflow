@@ -132,7 +132,7 @@ private:
 	void on_helper_event(const airplay::Event &event);
 	void apply_run_state();
 	void resync_displays(bool force);
-	void save_settings();
+	bool save_settings();
 	void note_activity();
 	void read_program_scene();
 	airplay::IdleInputs idle_inputs() const;
@@ -147,6 +147,8 @@ private:
 	std::unique_ptr<airplay::HelperSupervisor> supervisor_;
 	std::unique_ptr<AirPlayOutput> output_;
 	std::unique_ptr<airplay::DisplayListModel> view_;
+	// Saved-password blobs of removed displays, discarded after the next save.
+	std::vector<std::string> pending_discards_;
 	airplay::AutoStart autostart_;
 	QTimer idle_timer_;
 	airplay::LogRing log_ring_;

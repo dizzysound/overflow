@@ -102,6 +102,11 @@ public:
 
 	// True once after the view model changed settings (a saved or cleared password).
 	bool take_settings_dirty();
+	// Saved-password blobs replaced or forgotten since the last call. Their
+	// OS-store items are still there: discard them only once settings.json
+	// no longer names them (after a successful save), so a failed save never
+	// leaves the file pointing at a deleted item.
+	std::vector<std::string> take_pending_discards();
 
 private:
 	void on_display_event(const DisplayEvent &event);
@@ -117,6 +122,7 @@ private:
 	std::set<std::string> prompted_;      // prompts currently shown to the operator
 	std::map<std::string, std::string> memory_passwords_; // R6: session-only cache, never written to disk
 	bool dirty_ = false;
+	std::vector<std::string> pending_discards_;
 };
 
 } // namespace airplay

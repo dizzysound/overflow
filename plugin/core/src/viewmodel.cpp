@@ -3,6 +3,8 @@
 
 #include "airplay/viewmodel.hpp"
 
+#include <utility>
+
 #include "airplay/commands.hpp"
 
 #include <algorithm>
@@ -124,7 +126,11 @@ void DisplayListModel::answer_credential(const std::string &device_id, const std
 			// Persist only when asked to, and only when it can be protected;
 			// otherwise the value lives in memory only, for this session.
 			if (auto blob = secrets_.protect(value)) {
-				settings_.ensure_display(device_id, display_name_for(device_id)).password_protected = *blob;
+				std::string &saved =
+					settings_.ensure_display(device_id, display_name_for(device_id)).password_protected;
+				if (!saved.empty())
+					pending_discards_.push_back(saved); // the replaced password's OS-store item
+				saved = *blob;
 				dirty_ = true;
 			}
 		}
@@ -153,10 +159,16 @@ void DisplayListModel::forget_password(const std::string &device_id)
 	memory_passwords_.erase(device_id); // R6: clear the in-memory copy too
 	if (DisplaySettings *display = settings_.find_display(device_id)) {
 		if (!display->password_protected.empty()) {
+			pending_discards_.push_back(display->password_protected);
 			display->password_protected.clear();
 			dirty_ = true;
 		}
 	}
+}
+
+std::vector<std::string> DisplayListModel::take_pending_discards()
+{
+	return std::exchange(pending_discards_, {});
 }
 
 bool DisplayListModel::take_settings_dirty()

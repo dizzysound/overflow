@@ -59,7 +59,15 @@ func TestRunRejectsLiveDaemonThatPredatesInstanceLock(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("the Unix control socket and daemon.Run are not used by overflow-helper on Windows")
 	}
-	socketPath := filepath.Join(t.TempDir(), "doubletake.sock")
+	// Not t.TempDir(): it embeds this long test name, and under macOS's long
+	// default TMPDIR the socket path passes the 104-byte sun_path limit
+	// ("bind: invalid argument").
+	dir, err := os.MkdirTemp("", "dt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	socketPath := filepath.Join(dir, "doubletake.sock")
 	listener, err := net.Listen("unix", socketPath)
 	if err != nil {
 		t.Fatalf("listen as old daemon: %v", err)

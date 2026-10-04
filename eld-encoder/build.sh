@@ -9,6 +9,14 @@
 #                                    a static library with mingw-w64, and links
 #                                    a fully static eld-encoder.exe.
 #                                    Output: helper/bin/windows/eld-encoder.exe
+#   ./eld-encoder/build.sh macos     macOS universal (arm64 + x86_64) build
+#                                    against the same pinned fdk-aac, static,
+#                                    signed (ad hoc, or $CODESIGN_IDENT),
+#                                    macOS 13 or later.
+#                                    Output: helper/bin/macos/eld-encoder
+#   ./eld-encoder/build.sh linux     Linux build (run it on Linux) against the
+#                                    same pinned fdk-aac, fully static.
+#                                    Output: helper/bin/linux/eld-encoder
 #
 # Build intermediates live in eld-encoder/build/ (git-ignored). fdk-aac source
 # is never committed.
@@ -106,6 +114,75 @@ EOF
 	verify_windows_imports "$exe"
 }
 
+# Builds the pinned fdk-aac as a static library into $2 with extra CMake args.
+build_fdk_static() {
+	local fdk_build="$1" prefix="$2"
+	shift 2
+	rm -rf "$fdk_build" "$prefix"
+	cmake -S "$BUILD/fdk-aac-${FDK_VERSION}" -B "$fdk_build" \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX="$prefix" \
+		-DCMAKE_INSTALL_LIBDIR=lib \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DBUILD_PROGRAMS=OFF \
+		-DFDK_AAC_INSTALL_CMAKE_CONFIG_MODULE=OFF \
+		-DFDK_AAC_INSTALL_PKGCONFIG_MODULE=OFF \
+		"$@"
+	cmake --build "$fdk_build" --parallel
+	cmake --install "$fdk_build"
+}
+
+build_macos() {
+	[ "$(uname -s)" = Darwin ] || { echo "build.sh macos runs on macOS" >&2; exit 1; }
+	fetch_fdk
+	local prefix="$BUILD/macos-prefix"
+	build_fdk_static "$BUILD/fdk-aac-macos" "$prefix" \
+		-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+
+	local exe="$ROOT/helper/bin/macos/eld-encoder"
+	mkdir -p "$(dirname "$exe")"
+	cc -O2 -Wall -Wextra -Wno-unused-function -arch arm64 -arch x86_64 -mmacosx-version-min=13.0 \
+		-o "$exe" "$HERE/main.c" -I"$prefix/include" "$prefix/lib/libfdk-aac.a" -lc++
+	strip -x "$exe"
+	# Ad hoc by default; a Developer ID (CODESIGN_IDENT) also gets the hardened
+	# runtime and a timestamp, as notarization requires.
+	local ident="${CODESIGN_IDENT:--}"
+	if [ "$ident" = "-" ]; then
+		codesign --force --sign - "$exe"
+	else
+		codesign --force --options runtime --timestamp --sign "$ident" "$exe"
+	fi
+	cp "$BUILD/fdk-aac-${FDK_VERSION}/NOTICE" "$(dirname "$exe")/eld-encoder-FDK-AAC-NOTICE.txt"
+
+	echo "built $exe"
+	file "$exe"
+	# Only system libraries: no Homebrew or fdk-aac dylib.
+	# Dependency lines are indented; the others name the file and architecture.
+	if otool -L "$exe" | awk '/^[[:space:]]/ {print $1}' | grep -v -E '^/usr/lib/|^/System/'; then
+		echo "unexpected dylib dependency" >&2
+		exit 1
+	fi
+	echo "dylibs OK: system only"
+}
+
+build_linux() {
+	[ "$(uname -s)" = Linux ] || { echo "build.sh linux runs on Linux (or in a container)" >&2; exit 1; }
+	fetch_fdk
+	local prefix="$BUILD/linux-prefix"
+	build_fdk_static "$BUILD/fdk-aac-linux" "$prefix"
+
+	local exe="$ROOT/helper/bin/linux/eld-encoder"
+	mkdir -p "$(dirname "$exe")"
+	cc -O2 -Wall -Wextra -Wno-unused-function -static -o "$exe" "$HERE/main.c" \
+		-I"$prefix/include" -L"$prefix/lib" -lfdk-aac -lm
+	strip "$exe"
+	cp "$BUILD/fdk-aac-${FDK_VERSION}/NOTICE" "$(dirname "$exe")/eld-encoder-FDK-AAC-NOTICE.txt"
+
+	echo "built $exe"
+	file "$exe"
+	file "$exe" | grep -q "statically linked" || { echo "not statically linked: $exe" >&2; exit 1; }
+}
+
 # The .exe must load with nothing but Windows system DLLs next to it.
 verify_windows_imports() {
 	local exe="$1" dll bad=0
@@ -127,8 +204,10 @@ verify_windows_imports() {
 case "${1:-}" in
 native) build_native ;;
 windows) build_windows ;;
+macos) build_macos ;;
+linux) build_linux ;;
 *)
-	echo "usage: $0 native|windows" >&2
+	echo "usage: $0 native|windows|macos|linux" >&2
 	exit 2
 	;;
 esac
