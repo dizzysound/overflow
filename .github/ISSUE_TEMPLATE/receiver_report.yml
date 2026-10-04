@@ -24,7 +24,7 @@ body:
     id: setup
     attributes:
       label: Overflow version, OBS version, and network
-      placeholder: 0.1.0, OBS 32.2.2, receiver on Wi-Fi
+      placeholder: 0.2.0, OBS 32.2.2, receiver on Wi-Fi
   - type: textarea
     id: notes
     attributes:

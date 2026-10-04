@@ -7,6 +7,7 @@
 #pragma once
 
 #include "airplay-output.hpp"
+#include "airplay/ceiling_guard.hpp"
 #include "airplay/lead_policy.hpp"
 #include "airplay/live_lead.hpp"
 #include "airplay/log_ring.hpp"
@@ -129,6 +130,14 @@ private:
 	// p99 (capped at its lead) and, on repeated late windows, raises its late
 	// floor and asks update_leads() to restart it (spec section 6).
 	void on_delivery(const airplay::DeliveryEvent &dv);
+	// The ceiling guard's part of a delivery report: warns when the need is
+	// above the most TV delay the display's session can reach and, for an
+	// Auto display, reconnects it at a higher lead. True when it reconnected.
+	bool guard_ceiling(airplay::DisplaySettings &d, const airplay::DeliveryEvent &dv, int need_ms, int trouble);
+	// The warning lines for displays the ceiling guard is warning about.
+	std::vector<std::string> ceiling_warnings() const;
+	// A live row the ceiling guard is warning about turns yellow, with the warning as its tooltip.
+	void mark_ceiling_warnings(std::vector<airplay::DisplayRow> &rows) const;
 	void on_helper_event(const airplay::Event &event);
 	void apply_run_state();
 	void resync_displays(bool force);
@@ -192,6 +201,9 @@ private:
 	std::map<std::string, airplay::LiveLead> live_leads_;
 	std::map<std::string, int> live_effective_;
 	std::set<std::string> at_floor_logged_; // dynamic displays whose "at its floor" line was logged this session
+	// Per display, for this plugin run: a need above the session's ceiling
+	// (audio dropped late, 2026-10-04), its warning and its reconnects.
+	std::map<std::string, airplay::CeilingGuard> ceiling_guards_;
 	std::map<std::string, airplay::AudioLoss> audio_loss_; // per device: resend requests, for the status text
 	// Displays with a late-frame raise that update_leads() has not handled yet.
 	std::set<std::string> late_raised_;

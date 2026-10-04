@@ -5,6 +5,7 @@ name: plugin
 
 on:
   push:
+    branches: [main]
     paths:
       - 'plugin/**'
       - 'helper/**'
@@ -28,10 +29,14 @@ permissions:
 jobs:
   core-tests:
     name: core tests (${{ matrix.os }})
+    # GitHub bills private-repository minutes, Windows at 2x and macOS at 10x,
+    # but public repositories run free. The private repository is where pull
+    # requests live, so it checks Linux only; the public repository, which is
+    # what every release is built from, runs the full set.
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, macos-15, ubuntu-24.04]
+        os: ${{ (github.event.repository.private && fromJSON('["ubuntu-24.04"]')) || fromJSON('["windows-2022","macos-15","ubuntu-24.04"]') }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -110,6 +115,8 @@ jobs:
   plugin-windows:
     name: plugin (windows)
     runs-on: windows-2022
+    # Public only: a paid runner on the private repository. See core-tests.
+    if: ${{ !github.event.repository.private }}
     needs: [helper-windows, eld-encoder-windows]
     defaults:
       run:
@@ -177,6 +184,8 @@ jobs:
     name: plugin (macos)
     # OBS 32.2.2 requires the macOS 26.5 SDK (Xcode 26.5) to configure libobs.
     runs-on: macos-26
+    # Public only: a paid runner on the private repository. See core-tests.
+    if: ${{ !github.event.repository.private }}
     defaults:
       run:
         working-directory: plugin

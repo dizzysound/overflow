@@ -2,6 +2,7 @@ name: helper
 
 on:
   push:
+    branches: [main]
     paths:
       - 'helper/**'
       - '.github/workflows/helper.yml'
@@ -21,10 +22,14 @@ permissions:
 jobs:
   test:
     name: test (${{ matrix.os }})
+    # GitHub bills private-repository minutes, Windows at 2x and macOS at 10x,
+    # but public repositories run free. The private repository is where pull
+    # requests live, so it checks Linux only; the public repository, which is
+    # what every release is built from, runs the full set.
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-24.04]
+        os: ${{ (github.event.repository.private && fromJSON('["ubuntu-24.04"]')) || fromJSON('["windows-latest","macos-latest","ubuntu-24.04"]') }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:

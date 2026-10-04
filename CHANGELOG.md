@@ -5,6 +5,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-04
+
 ### Added
 
 - Apple VideoToolbox (hardware, macOS) and VAAPI (Linux) in the encoder fallback, ahead of x264.
@@ -24,8 +26,15 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- When OBS adds audio buffering mid-session (seen on 2026-10-04: +362 ms for an NDI source) and an
+  Auto display's TV delay can no longer reach what the audio needs, Overflow now says so in the
+  dock and the OBS log, and after 30 s reconnects that display with a higher TV delay (at most
+  three times per run, 5 and 20 minutes apart). Before, it dropped that display's audio as late for
+  the rest of the session without a warning. A fixed TV delay gets the warning only.
 - macOS: entering a pairing code no longer leaves an empty "Overflow" window behind (verified
   with a reproduction and a test; not yet re-run in OBS).
+- The helper no longer uses a full CPU core when the computer has no network (Wi-Fi off, cable
+  out); receiver discovery now waits 5 s between scans that end early.
 
 ## [0.1.0] - 2026-10-03
 

@@ -534,6 +534,9 @@ func mergeDiscoveredDevice(prev, next airplay.AirPlayDevice) airplay.AirPlayDevi
 	return merged
 }
 
+// discoverDevices is airplay.DiscoverAirPlayDevices; an indirection for tests.
+var discoverDevices = airplay.DiscoverAirPlayDevices
+
 // backgroundDiscover continuously browses mDNS for AirPlay devices.
 // Each scan runs for 5 seconds. Devices not seen for the configured TTL
 // (default 30 seconds) are removed.
@@ -543,7 +546,10 @@ func (d *Daemon) backgroundDiscover(ctx context.Context) {
 	log.Printf("[daemon] starting continuous mDNS discovery")
 	for {
 		browseCtx, cancel := context.WithTimeout(ctx, scanDuration)
-		found, err := airplay.DiscoverAirPlayDevices(browseCtx)
+		found, err := discoverDevices(browseCtx)
+		// A scan can return early (no LAN interface, a browse error); waiting
+		// out its window keeps the loop from spinning a core without network.
+		<-browseCtx.Done()
 		cancel()
 
 		if ctx.Err() != nil {
@@ -589,7 +595,7 @@ func (d *Daemon) backgroundDiscover(ctx context.Context) {
 			log.Printf("[daemon] mDNS browse error: %v", err)
 		}
 
-		// Next scan starts immediately (no extra wait — the 5s scan is the cadence)
+		// Next scan starts immediately: the 5 s window is the cadence.
 		if ctx.Err() != nil {
 			return
 		}

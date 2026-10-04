@@ -442,6 +442,15 @@ void Controller::on_delivery(const airplay::DeliveryEvent &dv)
 	run = std::max(run, p99);
 	d->video_need_ms = airplay::raise_video_need(d->video_need_ms, dv.p99_ms, cap);
 
+	const int audio_need =
+		d->audio_enabled ? static_cast<int>(output_->audio_age_ns() / 1000000ull) + airplay::kEldFrameMs : 0;
+	const int need = std::max(dv.p99_ms, audio_need); // this window's need (spec 10), not the learned video need
+	const int trouble = airplay::lead_trouble(dv.late, dv.audio_lost, dv.audio_resent, dv.audio_dropped);
+	if (guard_ceiling(*d, dv, need, trouble)) {
+		emit rows_changed();
+		return;
+	}
+
 	// A helper that slides the lead (live_lead) moves an Auto display's TV
 	// delay with set_lead instead of restarting it; no late-window restart.
 	if (live_lead_ && auto_lead(*d) && dv.lead_ceiling_ms > 0) {
@@ -457,10 +466,6 @@ void Controller::on_delivery(const airplay::DeliveryEvent &dv)
 				     .first;
 		}
 		live_effective_[d->device_id] = dv.lead_ms;
-		const int audio_need =
-			d->audio_enabled ? static_cast<int>(output_->audio_age_ns() / 1000000ull) + airplay::kEldFrameMs : 0;
-		const int need = std::max(dv.p99_ms, audio_need); // this window's need (spec 10), not the learned video need
-		const int trouble = airplay::lead_trouble(dv.late, dv.audio_lost, dv.audio_resent, dv.audio_dropped);
 		const int prev_target = it->second.target_ms();
 		const int target = it->second.on_window({now, trouble, dv.lead_ms, need});
 		if (target > 0) {
@@ -490,8 +495,7 @@ void Controller::on_delivery(const airplay::DeliveryEvent &dv)
 	// Spec section 6: repeated late frames. A delivery window with any late
 	// frame counts once; more than 3 such windows in 60 s raise the lead.
 	// Late video, audio dropped as late, and unrecovered audio loss all count.
-	if (!late_windows_[d->device_id].record(
-		    now, airplay::lead_trouble(dv.late, dv.audio_lost, dv.audio_resent, dv.audio_dropped)))
+	if (!late_windows_[d->device_id].record(now, trouble))
 		return;
 	if (d->latency_ms > 0 || settings_.global.target_latency_ms > 0)
 		return; // a fixed TV delay is the operator's choice; Auto alone learns
@@ -505,6 +509,60 @@ void Controller::on_delivery(const airplay::DeliveryEvent &dv)
 					     " ms");
 	late_raised_.insert(d->device_id);
 	update_leads(); // restarts it now, if it is live and was not restarted for this in 10 minutes
+}
+
+bool Controller::guard_ceiling(airplay::DisplaySettings &d, const airplay::DeliveryEvent &dv, int need_ms, int trouble)
+{
+	// A helper without live_lead reports no ceiling: its lead is fixed for the session.
+	const int ceiling = dv.lead_ceiling_ms > 0 ? dv.lead_ceiling_ms : dv.lead_ms;
+	const bool fixed = !auto_lead(d);
+	const bool may_reconnect =
+		live_lead_ && !fixed && dv.lead_ceiling_ms > 0 && view_->session_restartable(d.device_id);
+	// What a fresh session would start at now, from the live audio age.
+	airplay::DisplaySettings fresh = d;
+	fresh.saved_lead_ms = 0;
+	const int wanted = lead_for(fresh, d.video_need_ms, d.late_floor_ms);
+
+	airplay::CeilingGuard &guard = ceiling_guards_[d.device_id];
+	const bool was_exhausted = guard.exhausted();
+	const airplay::CeilingGuard::Step step =
+		guard.on_window({os_gettime_ns(), trouble, need_ms, ceiling}, may_reconnect, wanted);
+	if (step.warning_started || (guard.warning() && guard.exhausted() && !was_exhausted))
+		log(airplay::LogLevel::Warning, airplay::ceiling_warning_text(d.display_name, guard, fixed));
+	if (step.warning_cleared)
+		log(airplay::LogLevel::Info, d.display_name + ": TV delay " + std::to_string(dv.lead_ms) +
+						     " ms covers the need again (" + std::to_string(need_ms) + " ms)");
+	if (step.reconnect_ms <= 0)
+		return false;
+
+	log(airplay::LogLevel::Warning,
+	    d.display_name + ": reconnecting at TV delay " + std::to_string(step.reconnect_ms) + " ms (need about " +
+		    std::to_string(guard.need_ms()) + " ms, above its session's ceiling " + std::to_string(ceiling) +
+		    " ms; reconnect " + std::to_string(guard.reconnects()) + " of " +
+		    std::to_string(airplay::CeilingGuard::kMaxReconnects) + " this run)");
+	// The saved lead is where an Auto display's next session starts (lead_for);
+	// Auto dynamic lowers it again once the need falls.
+	d.saved_lead_ms = step.reconnect_ms;
+	applied_leads_[d.device_id] = step.reconnect_ms;
+	live_leads_.erase(d.device_id);
+	live_effective_.erase(d.device_id);
+	at_floor_logged_.erase(d.device_id);
+	save_settings();
+	// set_displays carries the new lead first, so the restart reconnects with it.
+	resync_displays(false);
+	supervisor_->send_command(airplay::restart_command(d.device_id));
+	return true;
+}
+
+std::vector<std::string> Controller::ceiling_warnings() const
+{
+	std::vector<std::string> out;
+	for (const airplay::DisplaySettings &d : settings_.displays) {
+		const auto it = ceiling_guards_.find(d.device_id);
+		if (d.enabled && it != ceiling_guards_.end() && it->second.warning() && view_->in_session(d.device_id))
+			out.push_back(airplay::ceiling_warning_text(d.display_name, it->second, !auto_lead(d)));
+	}
+	return out;
 }
 
 void Controller::on_helper_event(const airplay::Event &event)
@@ -704,6 +762,7 @@ std::vector<airplay::DisplayRow> Controller::rows() const
 	std::vector<airplay::DisplayRow> rows = view_->rows();
 	if (output_->active())
 		airplay::mark_scene_skips(rows, settings_, program_scene_);
+	mark_ceiling_warnings(rows);
 	return rows;
 }
 
@@ -712,7 +771,21 @@ std::vector<airplay::DisplayGroup> Controller::groups() const
 	std::vector<airplay::DisplayGroup> groups = view_->groups();
 	if (output_->active())
 		airplay::mark_scene_skips(groups, settings_, program_scene_);
+	for (airplay::DisplayGroup &g : groups)
+		mark_ceiling_warnings(g.displays);
 	return groups;
+}
+
+void Controller::mark_ceiling_warnings(std::vector<airplay::DisplayRow> &rows) const
+{
+	for (airplay::DisplayRow &row : rows) {
+		const auto it = ceiling_guards_.find(row.device_id);
+		const airplay::DisplaySettings *d = settings_.find_display(row.device_id);
+		if (!d || it == ceiling_guards_.end() || !it->second.warning() || row.light != airplay::Light::Green)
+			continue;
+		row.light = airplay::Light::Yellow;
+		row.status_tooltip = airplay::ceiling_warning_text(d->display_name, it->second, !auto_lead(*d));
+	}
 }
 
 std::vector<std::string> Controller::locations() const
@@ -740,6 +813,8 @@ void Controller::set_install_warning(const std::string &warning)
 std::string Controller::status_text() const
 {
 	std::string text = install_warning_.empty() ? std::string() : "Warning: " + install_warning_ + "\n";
+	for (const std::string &warning : ceiling_warnings())
+		text += "Warning: " + warning + "\n";
 	text += output_->active() ? "Live (" + output_->encoder_id() + ")" : std::string("Stopped");
 	if (!output_error_.empty())
 		text += ". Output error: " + output_error_;
