@@ -39,7 +39,7 @@ jobs:
       # The shipped Windows helper is built without cgo; test what ships.
       CGO_ENABLED: '0'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v5
         with:
           go-version: '1.27.x'
@@ -59,7 +59,7 @@ jobs:
       run:
         working-directory: helper
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v5
         with:
           go-version: '1.27.x'
