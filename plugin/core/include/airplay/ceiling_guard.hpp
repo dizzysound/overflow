@@ -99,7 +99,7 @@ private:
 	std::map<std::string, int> leads_;
 };
 
-// Dock and log text for a display in the warning state, e.g. "Narthex: audio
+// Dock and log text for a display in the warning state, e.g. "Lobby: audio
 // dropped late: needs about 400 ms, above this display's most TV delay of 297
 // ms. Reconnecting it with a higher TV delay."
 std::string ceiling_warning_text(const std::string &display_name, const CeilingGuard &guard, bool fixed);

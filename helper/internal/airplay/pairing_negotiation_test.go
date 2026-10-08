@@ -86,7 +86,7 @@ func TestTransientPairingFallsBackFromUnsupportedHAPToRawByProtocol(t *testing.T
 
 // Apple senders send X-Apple-PD on every pair-verify and mix the pair-verify
 // secret into the FairPlay key. A feature-27 receiver therefore gets the same:
-// UxPlay-derived receivers (the jqssun Android app on the Friendship panel)
+// UxPlay-derived receivers (the jqssun Android app on the Gallery panel)
 // mix whenever pair-verify completed and ignore PD, so an unmixed key made
 // them drop every video frame as undecryptable.
 func TestRawLegacyPairingSendsPDAndMixesFairPlayKey(t *testing.T) {

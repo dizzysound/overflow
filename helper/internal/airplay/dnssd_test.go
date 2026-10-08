@@ -8,8 +8,8 @@ import (
 
 func TestDNSSDInstanceLabel(t *testing.T) {
 	for _, tc := range []struct{ in, want string }{
-		{"Sacristy._airplay._tcp.local", "Sacristy"},
-		{"Sacristy._airplay._tcp.local.", "Sacristy"},
+		{"Studio._airplay._tcp.local", "Studio"},
+		{"Studio._airplay._tcp.local.", "Studio"},
 		{`Living\ Room._AirPlay._TCP.local`, "Living Room"},
 		{"Hisense Roku TV._airplay._tcp.local", "Hisense Roku TV"},
 		{"no-suffix", "no-suffix"},
@@ -22,7 +22,7 @@ func TestDNSSDInstanceLabel(t *testing.T) {
 
 func TestDeviceFromDNSSDParsesTXTCaseInsensitively(t *testing.T) {
 	dev := deviceFromDNSSD(dnssdService{
-		InstanceName: "Friendship._airplay._tcp.local",
+		InstanceName: "Gallery._airplay._tcp.local",
 		IPv4:         net.IPv4(192, 168, 1, 58),
 		Port:         7000,
 		Keys:         []string{"deviceId", "model", "features", "srcvers", "flag"},
@@ -31,7 +31,7 @@ func TestDeviceFromDNSSDParsesTXTCaseInsensitively(t *testing.T) {
 	if dev == nil {
 		t.Fatal("deviceFromDNSSD returned nil")
 	}
-	if dev.Name != "Friendship" || dev.IP != "192.168.1.58" || dev.Port != 7000 {
+	if dev.Name != "Gallery" || dev.IP != "192.168.1.58" || dev.Port != 7000 {
 		t.Fatalf("identity = %q %s:%d", dev.Name, dev.IP, dev.Port)
 	}
 	if dev.DeviceID != "4a:8a:5a:ea:01:8a" || dev.Model != "AppleTV3,2" || dev.SourceVersion != "220.68" {

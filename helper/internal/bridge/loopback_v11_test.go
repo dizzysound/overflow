@@ -71,7 +71,7 @@ func TestLoopbackLiveRoomReportsAudioOn(t *testing.T) {
 	defer cancel()
 	_, dev := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthNone,
-		Name: "Narthex", DeviceID: "AA:BB:CC:DD:EE:12",
+		Name: "Lobby", DeviceID: "AA:BB:CC:DD:EE:12",
 	})
 	h := startHarness(t, ctx, []bridge.Device{dev})
 	h.command(t, bridge.Command{Cmd: "set_rooms", Rooms: []bridge.RoomSelection{{DeviceID: dev.DeviceID, AutoReconnect: true}}})
@@ -93,7 +93,7 @@ func TestLoopbackAACELDOnlyRoomReportsAudioOff(t *testing.T) {
 	defer cancel()
 	_, dev := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileAppleTV3, Auth: airplay.ReceiverAuthNone,
-		Name: "Friendship", DeviceID: "AA:BB:CC:DD:EE:14", LegacyAudioOutputFormats: 0x1000000,
+		Name: "Gallery", DeviceID: "AA:BB:CC:DD:EE:14", LegacyAudioOutputFormats: 0x1000000,
 	})
 	h := startHarness(t, ctx, []bridge.Device{dev})
 	h.command(t, bridge.Command{Cmd: "set_rooms", Rooms: []bridge.RoomSelection{{DeviceID: dev.DeviceID, AutoReconnect: true}}})
@@ -109,7 +109,7 @@ func TestLoopbackDisplayAudioOff(t *testing.T) {
 	defer cancel()
 	srv, dev := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthNone,
-		Name: "Sacristy", DeviceID: "AA:BB:CC:DD:EE:16",
+		Name: "Studio", DeviceID: "AA:BB:CC:DD:EE:16",
 	})
 	h := startHarness(t, ctx, []bridge.Device{dev})
 	noAudio := false
@@ -135,7 +135,7 @@ func TestLoopbackRestartReconnects(t *testing.T) {
 	defer cancel()
 	srv, dev := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthNone,
-		Name: "Chapel", DeviceID: "AA:BB:CC:DD:EE:13",
+		Name: "Library", DeviceID: "AA:BB:CC:DD:EE:13",
 	})
 	h := startHarness(t, ctx, []bridge.Device{dev})
 	h.command(t, bridge.Command{Cmd: "set_rooms", Rooms: []bridge.RoomSelection{{DeviceID: dev.DeviceID, AutoReconnect: true}}})
@@ -158,7 +158,7 @@ func TestLoopbackManualAddressRoom(t *testing.T) {
 	defer cancel()
 	srv, dev := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthNone,
-		Name: "Fellowship Hall", DeviceID: "AA:BB:CC:DD:EE:15",
+		Name: "Atrium", DeviceID: "AA:BB:CC:DD:EE:15",
 	})
 	h := startHarness(t, ctx, nil)
 	h.command(t, bridge.Command{Cmd: "set_rooms", Rooms: []bridge.RoomSelection{

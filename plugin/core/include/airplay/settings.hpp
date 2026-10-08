@@ -31,7 +31,7 @@ constexpr double kMaxVolumeDb = 0.0;
 struct DisplaySettings {
 	std::string device_id;    // uppercased ASCII; the helper normalizes to uppercase on the wire
 	std::string display_name;
-	std::string location; // optional group heading in the dock, e.g. "Friendship Hall"
+	std::string location; // optional group heading in the dock, e.g. "Meeting Room"
 	bool enabled = false;
 	bool auto_reconnect = true;
 	bool audio_enabled = true; // false: video only for this display; volume is never touched

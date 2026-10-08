@@ -16,7 +16,7 @@ func TestBroadcastBacklogLogNamesTheSink(t *testing.T) {
 	broadcast := NewBroadcastCapture(capture)
 	broadcast.SetDropToKeyframe(true)
 	slow := broadcast.AddSink()
-	slow.SetLabel("Friendship (10.20.0.185)")
+	slow.SetLabel("Gallery (10.20.0.185)")
 	go func() { _ = broadcast.Run() }()
 	t.Cleanup(func() { close(frames) })
 
@@ -29,7 +29,7 @@ func TestBroadcastBacklogLogNamesTheSink(t *testing.T) {
 	for !strings.Contains(buf.String(), "sink backlog") && time.Now().Before(deadline) {
 		time.Sleep(5 * time.Millisecond)
 	}
-	if !strings.Contains(buf.String(), "[BROADCAST] sink backlog (Friendship (10.20.0.185))") {
+	if !strings.Contains(buf.String(), "[BROADCAST] sink backlog (Gallery (10.20.0.185))") {
 		t.Fatalf("backlog log does not name the sink:\n%s", buf.String())
 	}
 }

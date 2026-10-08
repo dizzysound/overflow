@@ -23,7 +23,7 @@ func TestSelectLegacyKey(t *testing.T) {
 
 // A UxPlay-derived receiver hashes the FairPlay key with the pair-verify
 // secret whenever pair-verify completed, even when it advertises feature 27
-// (the jqssun Android app on the Friendship panel does). The helper's auto
+// (the jqssun Android app on the Gallery panel does). The helper's auto
 // rule sends the raw key to feature-27 receivers, so auto's key is raw here;
 // mixed must still produce SHA-512(raw || secret)[:16].
 func TestSelectLegacyKeyMixedHashesRawKeyWithPairVerifySecret(t *testing.T) {

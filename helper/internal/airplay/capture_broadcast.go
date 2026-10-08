@@ -426,7 +426,7 @@ func (s *BroadcastSink) SetLabel(label string) {
 }
 
 // WifiTolerantFrameQueueDuration is the relay budget for a display that opts
-// in to tolerating brief network stalls. Wi-Fi receivers (the church's Hisense
+// in to tolerating brief network stalls. Wi-Fi receivers (the venue's Hisense
 // Roku TV, for one) stall for more than the 67 ms default often enough that,
 // at 60 fps, a four-frame backlog is shed and the display freezes until the
 // next IDR. 250 ms rides out those stalls at the cost of up to ~0.25 s extra

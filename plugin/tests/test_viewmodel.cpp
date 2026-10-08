@@ -73,14 +73,14 @@ const DisplayRow *find_row(const std::vector<DisplayRow> &rows, const std::strin
 TEST_CASE("rows merge saved displays with discovered devices, sorted by name")
 {
 	Fixture f;
-	f.settings.ensure_display("B", "sacristy").enabled = true;
+	f.settings.ensure_display("B", "studio").enabled = true;
 	f.vm.apply(parse_event(
-		R"({"event":"devices","devices":[{"device_id":"B","name":"Apple TV","ip":"10.20.0.164"},{"device_id":"C","name":"Narthex","ip":"10.20.0.5"}]})"));
+		R"({"event":"devices","devices":[{"device_id":"B","name":"Apple TV","ip":"10.20.0.164"},{"device_id":"C","name":"Lobby","ip":"10.20.0.5"}]})"));
 	const auto rows = f.vm.rows();
 	REQUIRE(rows.size() == 2);
-	CHECK(rows[0].device_id == "C"); // "Narthex" < "sacristy", case-insensitive
+	CHECK(rows[0].device_id == "C"); // "Lobby" < "studio", case-insensitive
 	CHECK_FALSE(rows[0].enabled);
-	CHECK(rows[1].display_name == "sacristy"); // the saved name wins over the discovered one
+	CHECK(rows[1].display_name == "studio"); // the saved name wins over the discovered one
 	CHECK(rows[1].enabled);
 	CHECK(rows[1].discovered);
 	CHECK(rows[1].ip == "10.20.0.164");
@@ -90,7 +90,7 @@ TEST_CASE("rows merge saved displays with discovered devices, sorted by name")
 TEST_CASE("a saved display that is not discovered still shows")
 {
 	Fixture f;
-	DisplaySettings &r = f.settings.ensure_display("M", "Friendship");
+	DisplaySettings &r = f.settings.ensure_display("M", "Gallery");
 	r.manual_ip = "192.168.1.58";
 	const auto rows = f.vm.rows();
 	REQUIRE(rows.size() == 1);
@@ -110,7 +110,7 @@ TEST_CASE("lights, audio badge and the paused-failure hint")
 	CHECK(light_for_state(DisplayState::Failed) == Light::Red);
 
 	Fixture f;
-	f.settings.ensure_display("A", "Friendship").enabled = true;
+	f.settings.ensure_display("A", "Gallery").enabled = true;
 	f.display(R"({"event":"display","device_id":"A","state":"live","audio":"off","audio_reason":"receiver only accepts AAC-ELD audio"})");
 	auto rows = f.vm.rows();
 	CHECK(rows[0].light == Light::Green);
@@ -129,7 +129,7 @@ TEST_CASE("lights, audio badge and the paused-failure hint")
 TEST_CASE("Minor 2: a display waiting on a credential hints that Restart re-prompts")
 {
 	Fixture f;
-	f.settings.ensure_display("A", "Sacristy").enabled = true;
+	f.settings.ensure_display("A", "Studio").enabled = true;
 	f.display(R"({"event":"display","device_id":"A","state":"credential","credential_kind":"pin"})");
 	const auto rows = f.vm.rows();
 	CHECK(rows[0].status_tooltip.find("Choose Restart to enter the code again.") != std::string::npos);
@@ -138,12 +138,12 @@ TEST_CASE("Minor 2: a display waiting on a credential hints that Restart re-prom
 TEST_CASE("a PIN prompt is shown once per episode and the answer is sent")
 {
 	Fixture f;
-	f.settings.ensure_display("A", "Sacristy").enabled = true;
+	f.settings.ensure_display("A", "Studio").enabled = true;
 	f.display(R"({"event":"display","device_id":"A","state":"credential","credential_kind":"pin"})");
 	f.display(R"({"event":"display","device_id":"A","state":"credential","credential_kind":"pin","error":"x"})");
 	REQUIRE(f.prompts.size() == 1);
 	CHECK(f.prompts[0].kind == "pin");
-	CHECK(f.prompts[0].display_name == "Sacristy");
+	CHECK(f.prompts[0].display_name == "Studio");
 	CHECK_FALSE(f.prompts[0].retry);
 	f.vm.answer_credential("A", "1234", true);
 	REQUIRE(f.sent.size() == 1);
@@ -229,7 +229,7 @@ TEST_CASE("cancel, restart, reconnect and forget")
 TEST_CASE("helper_restarted clears devices and states")
 {
 	Fixture f;
-	f.vm.apply(parse_event(R"({"event":"devices","devices":[{"device_id":"C","name":"Narthex"}]})"));
+	f.vm.apply(parse_event(R"({"event":"devices","devices":[{"device_id":"C","name":"Lobby"}]})"));
 	f.display(R"({"event":"display","device_id":"C","state":"live"})");
 	f.vm.helper_restarted();
 	CHECK(f.vm.rows().empty());
@@ -274,29 +274,29 @@ TEST_CASE("groups: locations sorted, displays with no location last, group check
 {
 	Fixture f;
 	DisplaySettings &left = f.settings.ensure_display("L", "Left TV");
-	left.location = "Friendship Hall";
+	left.location = "Meeting Room";
 	left.enabled = true;
-	f.settings.ensure_display("R", "Right TV").location = "Friendship Hall";
-	DisplaySettings &sac = f.settings.ensure_display("S", "Sacristy TV");
-	sac.location = "chapel";
+	f.settings.ensure_display("R", "Right TV").location = "Meeting Room";
+	DisplaySettings &sac = f.settings.ensure_display("S", "Studio TV");
+	sac.location = "library";
 	sac.enabled = true;
-	f.vm.apply(parse_event(R"({"event":"devices","devices":[{"device_id":"N","name":"Narthex"}]})"));
+	f.vm.apply(parse_event(R"({"event":"devices","devices":[{"device_id":"N","name":"Lobby"}]})"));
 
 	const auto groups = f.vm.groups();
 	REQUIRE(groups.size() == 3);
-	CHECK(groups[0].location == "chapel"); // case-insensitive: chapel < Friendship Hall
+	CHECK(groups[0].location == "library"); // case-insensitive: library < Meeting Room
 	CHECK(groups[0].check == GroupCheck::All);
-	CHECK(groups[1].location == "Friendship Hall");
+	CHECK(groups[1].location == "Meeting Room");
 	CHECK(groups[1].check == GroupCheck::Some);
 	REQUIRE(groups[1].displays.size() == 2);
 	CHECK(groups[1].displays[0].display_name == "Left TV");
-	CHECK(groups[1].displays[0].location == "Friendship Hall");
+	CHECK(groups[1].displays[0].location == "Meeting Room");
 	CHECK(groups[2].location.empty()); // no location: last
 	REQUIRE(groups[2].displays.size() == 1);
 	CHECK(groups[2].displays[0].device_id == "N");
 	CHECK(groups[2].check == GroupCheck::None);
 
-	CHECK(f.vm.locations() == std::vector<std::string>{"chapel", "Friendship Hall"});
+	CHECK(f.vm.locations() == std::vector<std::string>{"library", "Meeting Room"});
 }
 
 TEST_CASE("groups: no displays, no groups")

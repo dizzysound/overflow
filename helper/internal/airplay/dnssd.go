@@ -24,7 +24,7 @@ type dnsServiceBrowseRequest struct {
 type dnsServiceResolveRequest struct {
 	Version                   uint32  // must be DNS_QUERY_REQUEST_VERSION1
 	InterfaceIndex            uint32  // 0 = all interfaces
-	QueryName                 *uint16 // instance FQDN, e.g. "Sacristy._airplay._tcp.local"
+	QueryName                 *uint16 // instance FQDN, e.g. "Studio._airplay._tcp.local"
 	ResolveCompletionCallback uintptr // PDNS_SERVICE_RESOLVE_COMPLETE
 	QueryContext              uintptr
 }
@@ -61,7 +61,7 @@ type dnssdService struct {
 const airplayServiceSuffix = "._airplay._tcp.local"
 
 // dnssdInstanceLabel returns the instance label of a DNS-SD service FQDN
-// ("Sacristy._airplay._tcp.local" -> "Sacristy"), removing any escapes.
+// ("Studio._airplay._tcp.local" -> "Studio"), removing any escapes.
 func dnssdInstanceLabel(fqdn string) string {
 	name := strings.TrimSuffix(fqdn, ".")
 	if n := len(name) - len(airplayServiceSuffix); n >= 0 && strings.EqualFold(name[n:], airplayServiceSuffix) {
@@ -81,7 +81,7 @@ func dnssdInstanceLabel(fqdn string) string {
 // family, not a full A-record set. When that one IPv4 address is not on a
 // network this host is directly attached to, this looks up the instance's
 // host name (svc.HostName, DNS_SERVICE_INSTANCE pszHostName, e.g.
-// "Friendship.local") for additional IPv4 addresses via lookupAdditionalIPv4
+// "Gallery.local") for additional IPv4 addresses via lookupAdditionalIPv4
 // (hostname_lookup.go), so preferLocalAddress has more than the one resolved
 // address to choose from. When the resolved address is already local, the
 // lookup is skipped entirely.

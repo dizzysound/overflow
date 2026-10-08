@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Narthex on 2026-10-04: an Auto Wi-Fi session that started at 197 ms with
+// Lobby on 2026-10-04: an Auto Wi-Fi session that started at 197 ms with
 // 100 ms of headroom (297 ms announced at SETUP). At 10:57:02 OBS added 362 ms
 // of audio buffering, so the audio reaching the helper went from about 30 ms
 // old to about 389 ms old and stayed there.

@@ -18,7 +18,7 @@ import (
 // Native DNS-SD discovery through the Windows DNS client service (dnsapi.dll,
 // Windows 10 1709 and later). That service shares UDP 5353 with Bonjour and
 // other mDNS software, where the built-in zeroconf listener only sometimes
-// receives replies (five processes on port 5353 on the church streaming PC,
+// receives replies (five processes on port 5353 on the streaming PC,
 // 2026-09-26).
 //
 // Per scan: DnsServiceBrowse("_airplay._tcp.local") delivers PTR records that

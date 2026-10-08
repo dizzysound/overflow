@@ -20,12 +20,12 @@ TEST_CASE("ready")
 TEST_CASE("devices")
 {
 	const Event e = parse_event(
-		R"({"event":"devices","devices":[{"device_id":"9E:B8","name":"Sacristy","model":"AppleTV5,3","ip":"10.20.0.164","port":7000},{"name":"no id"}]})");
+		R"({"event":"devices","devices":[{"device_id":"9E:B8","name":"Studio","model":"AppleTV5,3","ip":"10.20.0.164","port":7000},{"name":"no id"}]})");
 	REQUIRE(std::holds_alternative<DevicesEvent>(e));
 	const auto &d = std::get<DevicesEvent>(e).devices;
 	REQUIRE(d.size() == 1);
 	CHECK(d[0].device_id == "9E:B8");
-	CHECK(d[0].name == "Sacristy");
+	CHECK(d[0].name == "Studio");
 	CHECK(d[0].model == "AppleTV5,3");
 	CHECK(d[0].ip == "10.20.0.164");
 	CHECK(d[0].port == 7000);

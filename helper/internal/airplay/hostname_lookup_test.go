@@ -32,15 +32,15 @@ func TestDeviceFromDNSSDHostNameLookupPicksLocalAddress(t *testing.T) {
 	calls := 0
 	lookupHostIPv4 = func(ctx context.Context, host string) ([]net.IP, error) {
 		calls++
-		if host != "Friendship.local" {
-			t.Fatalf("lookupHostIPv4 host = %q, want Friendship.local", host)
+		if host != "Gallery.local" {
+			t.Fatalf("lookupHostIPv4 host = %q, want Gallery.local", host)
 		}
 		return []net.IP{net.ParseIP("10.20.0.164")}, nil
 	}
 
 	dev := deviceFromDNSSD(dnssdService{
-		InstanceName: "Friendship._airplay._tcp.local",
-		HostName:     "Friendship.local",
+		InstanceName: "Gallery._airplay._tcp.local",
+		HostName:     "Gallery.local",
 		IPv4:         net.IPv4(192, 168, 1, 168),
 		Port:         7000,
 	})
@@ -68,8 +68,8 @@ func TestDeviceFromDNSSDHostNameLookupErrorKeepsOriginalAddress(t *testing.T) {
 	}
 
 	dev := deviceFromDNSSD(dnssdService{
-		InstanceName: "Friendship._airplay._tcp.local",
-		HostName:     "Friendship.local",
+		InstanceName: "Gallery._airplay._tcp.local",
+		HostName:     "Gallery.local",
 		IPv4:         net.IPv4(192, 168, 1, 168),
 		Port:         7000,
 	})
@@ -96,8 +96,8 @@ func TestDeviceFromDNSSDSkipsLookupWhenResolvedAddressIsAlreadyLocal(t *testing.
 	}
 
 	dev := deviceFromDNSSD(dnssdService{
-		InstanceName: "Friendship._airplay._tcp.local",
-		HostName:     "Friendship.local",
+		InstanceName: "Gallery._airplay._tcp.local",
+		HostName:     "Gallery.local",
 		IPv4:         net.IPv4(10, 20, 0, 164), // already on the attached subnet
 		Port:         7000,
 	})
@@ -121,8 +121,8 @@ func TestLookupAdditionalIPv4CachesPerHost(t *testing.T) {
 		return []net.IP{net.ParseIP("10.20.0.164")}, nil
 	}
 
-	first := lookupAdditionalIPv4("Friendship.local")
-	second := lookupAdditionalIPv4("Friendship.local")
+	first := lookupAdditionalIPv4("Gallery.local")
+	second := lookupAdditionalIPv4("Gallery.local")
 
 	if calls != 1 {
 		t.Fatalf("lookupHostIPv4 called %d times for two lookups inside the cache TTL, want 1", calls)

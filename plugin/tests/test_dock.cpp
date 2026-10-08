@@ -50,12 +50,12 @@ public:
 		return all;
 	}
 	std::vector<airplay::DisplayGroup> groups() const override { return groups_; }
-	std::vector<std::string> locations() const override { return {"Friendship Hall", "Sanctuary"}; }
+	std::vector<std::string> locations() const override { return {"Meeting Room", "Main Room"}; }
 	const airplay::Settings &settings() const override { return settings_; }
 	bool running() const override { return running_; }
 	std::string status_text() const override { return running_ ? "Live (obs_x264)" : "Stopped"; }
 	std::vector<std::string> available_encoders() const override { return {"obs_x264", "obs_nvenc_h264_tex"}; }
-	std::vector<std::string> scene_names() const override { return {"Pulpit", "Narthex Wide"}; }
+	std::vector<std::string> scene_names() const override { return {"Stage", "Lobby Wide"}; }
 	bool can_remember_passwords() const override { return true; }
 	std::string diagnostics_report() const override { return "diagnostics report\n"; }
 	void set_display_enabled(const std::string &id, bool enabled) override
@@ -111,20 +111,20 @@ airplay::DisplayRow row(const std::string &id, const std::string &name, bool ena
 	return r;
 }
 
-// Friendship Hall: Left (on, live, no audio) and Right (off); ungrouped: Narthex (off).
+// Meeting Room: Left (on, live, no audio) and Right (off); ungrouped: Lobby (off).
 FakeBackend two_groups()
 {
 	FakeBackend b;
-	airplay::DisplayGroup hall;
-	hall.location = "Friendship Hall";
-	hall.check = airplay::GroupCheck::Some;
-	hall.displays = {row("L", "Left TV", true, "live", airplay::Light::Green, "Friendship Hall"),
-			 row("R", "Right TV", false, "", airplay::Light::Gray, "Friendship Hall")};
-	hall.displays[0].audio_off = true;
-	hall.displays[0].audio_reason = "receiver only accepts AAC-ELD audio";
+	airplay::DisplayGroup meeting;
+	meeting.location = "Meeting Room";
+	meeting.check = airplay::GroupCheck::Some;
+	meeting.displays = {row("L", "Left TV", true, "live", airplay::Light::Green, "Meeting Room"),
+			 row("R", "Right TV", false, "", airplay::Light::Gray, "Meeting Room")};
+	meeting.displays[0].audio_off = true;
+	meeting.displays[0].audio_reason = "receiver only accepts AAC-ELD audio";
 	airplay::DisplayGroup none;
-	none.displays = {row("N", "Narthex", false, "", airplay::Light::Gray)};
-	b.groups_ = {hall, none};
+	none.displays = {row("N", "Lobby", false, "", airplay::Light::Gray)};
+	b.groups_ = {meeting, none};
 	return b;
 }
 
@@ -160,20 +160,20 @@ TEST_CASE("dock groups displays under location headings, ungrouped last")
 	AirPlayDock dock(&b);
 	QTreeWidget *tree = dock.tree();
 	REQUIRE(tree->topLevelItemCount() == 2);
-	QTreeWidgetItem *hall = tree->topLevelItem(0);
-	CHECK(hall->text(0) == QStringLiteral("Friendship Hall"));
-	CHECK(hall->data(0, AirPlayDock::kHeadingRole).toBool());
-	CHECK(hall->checkState(0) == Qt::PartiallyChecked);
-	REQUIRE(hall->childCount() == 2);
-	CHECK(hall->child(0)->text(0) == QStringLiteral("Left TV"));
-	CHECK(hall->child(0)->checkState(0) == Qt::Checked);
-	CHECK(hall->child(0)->text(1) == QStringLiteral("live"));
-	CHECK(hall->child(0)->text(2) == QStringLiteral("no audio"));
-	CHECK(hall->child(0)->toolTip(2) == QStringLiteral("receiver only accepts AAC-ELD audio"));
-	CHECK(hall->child(1)->text(1) == QStringLiteral("available"));
-	QTreeWidgetItem *narthex = tree->topLevelItem(1);
-	CHECK(narthex->text(0) == QStringLiteral("Narthex"));
-	CHECK_FALSE(narthex->data(0, AirPlayDock::kHeadingRole).toBool());
+	QTreeWidgetItem *meeting = tree->topLevelItem(0);
+	CHECK(meeting->text(0) == QStringLiteral("Meeting Room"));
+	CHECK(meeting->data(0, AirPlayDock::kHeadingRole).toBool());
+	CHECK(meeting->checkState(0) == Qt::PartiallyChecked);
+	REQUIRE(meeting->childCount() == 2);
+	CHECK(meeting->child(0)->text(0) == QStringLiteral("Left TV"));
+	CHECK(meeting->child(0)->checkState(0) == Qt::Checked);
+	CHECK(meeting->child(0)->text(1) == QStringLiteral("live"));
+	CHECK(meeting->child(0)->text(2) == QStringLiteral("no audio"));
+	CHECK(meeting->child(0)->toolTip(2) == QStringLiteral("receiver only accepts AAC-ELD audio"));
+	CHECK(meeting->child(1)->text(1) == QStringLiteral("available"));
+	QTreeWidgetItem *lobby = tree->topLevelItem(1);
+	CHECK(lobby->text(0) == QStringLiteral("Lobby"));
+	CHECK_FALSE(lobby->data(0, AirPlayDock::kHeadingRole).toBool());
 	CHECK(dock.status_label()->text() == QStringLiteral("Stopped"));
 }
 
@@ -181,23 +181,23 @@ TEST_CASE("a location heading selects or deselects its whole group")
 {
 	FakeBackend b = two_groups();
 	AirPlayDock dock(&b);
-	QTreeWidgetItem *hall = dock.tree()->topLevelItem(0);
-	hall->setCheckState(0, Qt::Checked); // what a click on a partly checked heading does
-	CHECK(b.calls == std::vector<std::string>{"location Friendship Hall on"});
-	hall->setCheckState(0, Qt::Unchecked);
-	CHECK(b.calls.back() == "location Friendship Hall off");
+	QTreeWidgetItem *meeting = dock.tree()->topLevelItem(0);
+	meeting->setCheckState(0, Qt::Checked); // what a click on a partly checked heading does
+	CHECK(b.calls == std::vector<std::string>{"location Meeting Room on"});
+	meeting->setCheckState(0, Qt::Unchecked);
+	CHECK(b.calls.back() == "location Meeting Room off");
 }
 
 TEST_CASE("checking a display and renaming it reach the backend")
 {
 	FakeBackend b = two_groups();
 	AirPlayDock dock(&b);
-	QTreeWidgetItem *narthex = dock.tree()->topLevelItem(1);
-	narthex->setCheckState(0, Qt::Checked);
+	QTreeWidgetItem *lobby = dock.tree()->topLevelItem(1);
+	lobby->setCheckState(0, Qt::Checked);
 	CHECK(b.calls == std::vector<std::string>{"enable N on"});
 	b.groups_[1].displays[0].enabled = true;
-	narthex->setText(0, QStringLiteral("Narthex TV"));
-	CHECK(b.calls.back() == "rename N Narthex TV");
+	lobby->setText(0, QStringLiteral("Lobby TV"));
+	CHECK(b.calls.back() == "rename N Lobby TV");
 }
 
 TEST_CASE("refresh keeps the selected display and never calls the backend")
@@ -334,11 +334,11 @@ TEST_CASE("display settings dialog round trip")
 	d.device_id = "A";
 	d.display_name = "Roku";
 	d.password_protected = "blob";
-	DisplaySettingsDialog dialog(d, {"Friendship Hall"});
+	DisplaySettingsDialog dialog(d, {"Meeting Room"});
 	airplay::DisplaySettings out = dialog.result_settings();
 	CHECK(out == d); // an untouched dialog changes nothing; volume stays unset
 
-	dialog.findChild<QComboBox *>(QStringLiteral("location"))->setEditText(QStringLiteral(" Friendship Hall "));
+	dialog.findChild<QComboBox *>(QStringLiteral("location"))->setEditText(QStringLiteral(" Meeting Room "));
 	dialog.findChild<QCheckBox *>(QStringLiteral("setVolume"))->setChecked(true);
 	dialog.findChild<QDoubleSpinBox *>(QStringLiteral("volume"))->setValue(-12.5);
 	dialog.findChild<QLineEdit *>(QStringLiteral("ip"))->setText(QStringLiteral(" 10.20.0.178 "));
@@ -348,7 +348,7 @@ TEST_CASE("display settings dialog round trip")
 	CHECK(dialog.findChild<QSpinBox *>(QStringLiteral("idleMinutes"))->isEnabled());
 	dialog.findChild<QCheckBox *>(QStringLiteral("clearPassword"))->setChecked(true);
 	out = dialog.result_settings();
-	CHECK(out.location == "Friendship Hall");
+	CHECK(out.location == "Meeting Room");
 	CHECK(out.volume_db == std::optional<double>(-12.5));
 	CHECK(out.manual_ip == "10.20.0.178");
 	CHECK(out.manual_port == 7000);
@@ -425,7 +425,7 @@ TEST_CASE("display dialog: TV delay spinbox round-trips; 0 reads Auto")
 {
 	airplay::DisplaySettings d;
 	d.device_id = "AA";
-	d.display_name = "Sacristy";
+	d.display_name = "Studio";
 	DisplaySettingsDialog dialog(d, {});
 	CHECK(dialog.result_settings() == d); // untouched: Auto
 	auto *delay = dialog.findChild<QSpinBox *>(QStringLiteral("tvDelay"));
@@ -524,7 +524,7 @@ TEST_CASE("global settings dialog default preset is 1080p 6 Mbps and the preset 
 
 TEST_CASE("credential and add-display dialogs")
 {
-	CredentialDialog pin(QStringLiteral("Sacristy"), QStringLiteral("pin"), false, true);
+	CredentialDialog pin(QStringLiteral("Studio"), QStringLiteral("pin"), false, true);
 	CHECK(pin.findChild<QLabel *>(QStringLiteral("prompt"))->text().contains(QStringLiteral("code shown")));
 	CHECK_FALSE(pin.remember());
 	pin.findChild<QLineEdit *>(QStringLiteral("value"))->setText(QStringLiteral(" 1234 "));
@@ -537,12 +537,12 @@ TEST_CASE("credential and add-display dialogs")
 	CHECK(password.findChild<QLineEdit *>(QStringLiteral("value"))->echoMode() == QLineEdit::Password);
 	CHECK(password.remember());
 
-	AddDisplayDialog add({"Friendship Hall"});
+	AddDisplayDialog add({"Meeting Room"});
 	add.findChild<QLineEdit *>(QStringLiteral("ip"))->setText(QStringLiteral("192.168.1.58"));
-	add.findChild<QComboBox *>(QStringLiteral("location"))->setEditText(QStringLiteral("Friendship Hall"));
+	add.findChild<QComboBox *>(QStringLiteral("location"))->setEditText(QStringLiteral("Meeting Room"));
 	CHECK(add.ip() == QStringLiteral("192.168.1.58"));
 	CHECK(add.port() == 0);
-	CHECK(add.location() == QStringLiteral("Friendship Hall"));
+	CHECK(add.location() == QStringLiteral("Meeting Room"));
 }
 
 TEST_CASE("Minor 3: Add display only enables OK for a valid IPv4 or IPv6 literal")
@@ -703,22 +703,22 @@ TEST_CASE("display dialog: Disconnect on these scenes round-trips and keeps a sc
 {
 	airplay::DisplaySettings d;
 	d.device_id = "N";
-	d.display_name = "Narthex";
+	d.display_name = "Lobby";
 	d.skip_scenes = {"Old Wide"};
-	DisplaySettingsDialog dialog(d, {}, {"Pulpit", "Narthex Wide"});
+	DisplaySettingsDialog dialog(d, {}, {"Stage", "Lobby Wide"});
 	CHECK(dialog.result_settings() == d); // untouched: the missing scene stays
 
 	auto *list = dialog.findChild<QListWidget *>(QStringLiteral("skipScenes"));
 	REQUIRE(list != nullptr);
 	REQUIRE(list->count() == 3);
-	CHECK(list->item(0)->text() == QStringLiteral("Pulpit"));
+	CHECK(list->item(0)->text() == QStringLiteral("Stage"));
 	CHECK(list->item(0)->checkState() == Qt::Unchecked);
 	CHECK(list->item(2)->text() == QStringLiteral("Old Wide (not in this scene collection)"));
 	CHECK(list->item(2)->checkState() == Qt::Checked);
 
 	list->item(1)->setCheckState(Qt::Checked);
 	list->item(2)->setCheckState(Qt::Unchecked);
-	CHECK(dialog.result_settings().skip_scenes == std::vector<std::string>{"Narthex Wide"});
+	CHECK(dialog.result_settings().skip_scenes == std::vector<std::string>{"Lobby Wide"});
 }
 
 TEST_CASE("every display row has a settings gear that opens its settings; headings have none")

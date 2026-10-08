@@ -12,7 +12,7 @@ namespace {
 constexpr uint64_t kSec = 1000ull * 1000 * 1000;
 constexpr uint64_t kMin = 60 * kSec;
 
-// Narthex on 2026-10-04: an Auto Wi-Fi display that started at 197 ms with a
+// Lobby on 2026-10-04: an Auto Wi-Fi display that started at 197 ms with a
 // 297 ms ceiling. At 10:57:02 OBS added 362 ms of audio buffering; the audio
 // age went from about 30 ms to about 389 ms (need 400) and stayed there.
 constexpr int kStart = 197;
@@ -126,7 +126,7 @@ TEST_CASE("CeilingGuard: a fixed TV delay warns but never reconnects")
 	CHECK(feed_over(g, 5 * kSec, 30 * kMin, false) == 0);
 	CHECK(g.warning());
 	CHECK(g.reconnects() == 0);
-	const std::string text = airplay::ceiling_warning_text("Narthex", g, true);
+	const std::string text = airplay::ceiling_warning_text("Lobby", g, true);
 	CHECK(text.find("needs about 400 ms") != std::string::npos);
 	CHECK(text.find("297 ms") != std::string::npos);
 	CHECK(text.find("fixed") != std::string::npos);
@@ -147,7 +147,7 @@ TEST_CASE("CeilingGuard: reconnects back off 5 then 20 minutes and stop after th
 	CHECK(feed_over(g, third + 5 * kSec, third + 300 * kMin, true) == 0);
 	CHECK(g.reconnects() == CeilingGuard::kMaxReconnects);
 	CHECK(g.exhausted());
-	CHECK(airplay::ceiling_warning_text("Narthex", g, false).find("cannot raise it again") != std::string::npos);
+	CHECK(airplay::ceiling_warning_text("Lobby", g, false).find("cannot raise it again") != std::string::npos);
 }
 
 TEST_CASE("CeilingGuard: at the 2000 ms limit there is nothing to reconnect to")

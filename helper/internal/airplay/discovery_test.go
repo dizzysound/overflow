@@ -383,7 +383,7 @@ func TestModernPairingClassificationRejectsThirdPartyFeatureMasks(t *testing.T) 
 
 // TestParseServiceEntryKeepsAllAdvertisedIPv4Addresses is the field-report
 // regression: the Newline/UxPlay panel advertises both its Ethernet address
-// on the church CameraAV network (the sender's own subnet) and a second,
+// on a venue camera network (the sender's own subnet) and a second,
 // unreachable address from another interface. Discovery must keep both in
 // IPs and dial the same-subnet one, not just entry.AddrIPv4[0].
 func TestParseServiceEntryKeepsAllAdvertisedIPv4Addresses(t *testing.T) {
@@ -395,7 +395,7 @@ func TestParseServiceEntryKeepsAllAdvertisedIPv4Addresses(t *testing.T) {
 	fakeAttachedNetwork(t, "10.20.0.5/24")
 	resetLocalAddrCacheForTest()
 
-	entry := zeroconf.NewServiceEntry("Friendship", "_airplay._tcp", "local.")
+	entry := zeroconf.NewServiceEntry("Gallery", "_airplay._tcp", "local.")
 	entry.Port = 7000
 	entry.AddrIPv4 = []net.IP{net.ParseIP("192.168.1.168"), net.ParseIP("10.20.0.164")}
 

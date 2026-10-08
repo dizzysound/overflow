@@ -12,9 +12,9 @@ import (
 // DnsServiceResolve's DNS_SERVICE_INSTANCE exposes a single IP4Address, not
 // an array (see the windns.h citation on deviceFromDNSSD in dnssd.go). When
 // that one address is not on a network this host is directly attached to —
-// the Friendship/Newline field case, where the resolved address came from a
+// the Gallery/Newline field case, where the resolved address came from a
 // second interface with no local route — this file resolves the instance's
-// host name (DNS_SERVICE_INSTANCE pszHostName, e.g. "Friendship.local") for
+// host name (DNS_SERVICE_INSTANCE pszHostName, e.g. "Gallery.local") for
 // any additional IPv4 addresses, so preferLocalAddress has more than one
 // candidate to choose from.
 //

@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// simClock drives a clockMap the way the church PC does: OBS stamps with a
+// simClock drives a clockMap the way the streaming PC does: OBS stamps with a
 // precise clock (QPC), the helper reads Go's time.Now, which on Windows moves
 // only at the system timer tick, and each message spends a random time in the pipe.
 type simClock struct {

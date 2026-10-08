@@ -52,7 +52,7 @@ DisplaySettingsDialog::DisplaySettingsDialog(const airplay::DisplaySettings &dis
 	for (const std::string &l : locations)
 		location_->addItem(QString::fromStdString(l));
 	location_->setEditText(QString::fromStdString(display.location));
-	location_->setToolTip(QStringLiteral("Displays with the same location are grouped in the dock, for example \"Friendship Hall\"."));
+	location_->setToolTip(QStringLiteral("Displays with the same location are grouped in the dock, for example \"Meeting Room\"."));
 	form->addRow(QStringLiteral("Location"), location_);
 
 	auto_reconnect_ = new QCheckBox(QStringLiteral("Reconnect automatically after a drop"));

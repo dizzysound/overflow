@@ -49,7 +49,7 @@ func TestSanitizeRoomsKeepsWifiTolerant(t *testing.T) {
 func TestSanitizeRoomsManualAddress(t *testing.T) {
 	got := sanitizeRooms([]RoomSelection{
 		{DeviceID: "A", IP: "10.20.0.178", Port: 7000},
-		{DeviceID: "B", IP: "sacristy.local"},
+		{DeviceID: "B", IP: "studio.local"},
 		{DeviceID: "C", IP: "10.20.0.164", Port: 70000},
 		{DeviceID: "D", Port: 7000},
 		{DeviceID: "E", IP: "fe80::1"},

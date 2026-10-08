@@ -17,7 +17,7 @@ import (
 // subnets (e.g. a UxPlay panel bridging Ethernet and Wi-Fi) and mDNS/DNS-SD
 // advertises both: dialing the address on the subnet the sender is actually
 // attached to avoids routing the stream through an intermediate gateway that
-// may not sustain it (see the Newline/Friendship field report, 2026-09-26).
+// may not sustain it (see the Newline/Gallery field report, 2026-09-26).
 //
 // preferLocalAddress is a pure function so it can be unit tested without any
 // real network interfaces.

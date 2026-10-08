@@ -1,5 +1,5 @@
 # Samples NVIDIA GPU utilization once a second for -Minutes and writes a CSV.
-# Read-only: runs nvidia-smi queries only. Usage (on the church PC):
+# Read-only: runs nvidia-smi queries only. Usage (on the streaming PC):
 #   powershell -ExecutionPolicy Bypass -File C:\airplay-helper\bench\gpu-sample.ps1 -Minutes 100
 param([int]$Minutes = 100, [string]$OutDir = "C:\airplay-helper\bench")
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
