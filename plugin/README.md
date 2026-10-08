@@ -21,7 +21,7 @@ What has been tested where:
 |---|---|---|---|
 | Core and helper tests | yes | yes | yes (Ubuntu 24.04) |
 | Loads in OBS 32 | yes | yes (32.2.2) | yes (32.2.0 from the OBS PPA, headless) |
-| Real receivers | Apple TV HD, Roku TV, UxPlay panels, on site at a church | Apple TV 4K, about 75 s, video and AAC-ELD audio good | Apple TV 4K from a headless test host: audio clean; video slow because that host rendered only about 11 fps, so smooth video is untested |
+| Real receivers | Apple TV HD, Roku TV, UxPlay panels, on site at a church | Apple TV 4K: one session of about 6.5 min with 0.2.1 (OBS 32.2.2, VideoToolbox), picture and sound good | Apple TV 4K from a headless test host: audio clean; video slow because that host rendered only about 11 fps, so smooth video is untested. A 0.2.1 rerun on 2026-10-08 (test signal) gave the same result: picture and sound arrive, motion choppy |
 | Saved passwords | DPAPI | Keychain (tested against the real Keychain, not yet with a receiver) | Secret Service (tested against GNOME Keyring, not yet with a receiver) |
 
 ## Install

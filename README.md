@@ -66,7 +66,8 @@ Some receivers accept only AAC-ELD audio; Overflow includes an AAC-ELD encoder f
   - Windows 10 or 11, 64-bit.
   - macOS 13 or later, Apple silicon or Intel.
   - Linux x86_64 (built on Ubuntu 24.04 against OBS from the OBS PPA; tests pass and it loads in
-    OBS, but it has had only a short receiver test on a slow headless machine).
+    OBS, and it has played to an Apple TV with picture and sound, but only on a slow machine where
+    motion was choppy).
 - The computer and the receivers on the same network, or receivers added by IP address.
 
 The Windows build runs at the church Overflow was written for. The macOS and Linux builds are new;
