@@ -21,7 +21,7 @@ What has been tested where:
 |---|---|---|---|
 | Core and helper tests | yes | yes | yes (Ubuntu 24.04) |
 | Loads in OBS 32 | yes | yes (32.2.2) | yes (32.2.0 from the OBS PPA, headless) |
-| Real receivers | Apple TV HD, Roku TV, UxPlay panels, in production use | Apple TV 4K: one 0.2.1 session of about 6.5 min (OBS 32.2.2, VideoToolbox); picture and sound delivered | Apple TV 4K from a low-power headless host (0.2.1, test signal): picture and sound delivered; the host rendered about 11 fps, so full-frame-rate video is untested |
+| Real receivers | Apple TV HD, Roku TV, UxPlay panels, in production use | Apple TV 4K: one 0.2.1 session of about 6 min (OBS 32.2.2, VideoToolbox); picture and sound delivered; the receiver dropped the stream twice near the end and the plugin reconnected each time | Apple TV 4K from a low-power headless host (0.2.1, test signal, about 3 min): picture and sound delivered, judged by eye and not measured; the same host rendered about 11 fps in the 3 Oct test, so full-frame-rate video is untested |
 | Saved passwords | DPAPI | Keychain (tested against the real Keychain, not yet with a receiver) | Secret Service (tested against GNOME Keyring, not yet with a receiver) |
 
 ## Install

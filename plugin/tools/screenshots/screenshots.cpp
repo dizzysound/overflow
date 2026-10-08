@@ -50,16 +50,16 @@ public:
 		overflow.check = airplay::GroupCheck::All;
 		overflow.displays = {row("A1", "Front TV", "Overflow Room", "AppleTV5,3", true, "live", airplay::Light::Green),
 				     row("A2", "Back TV", "Overflow Room", "AppleTV11,1", true, "live", airplay::Light::Green)};
-		airplay::DisplayGroup hall;
-		hall.location = "Fellowship Hall";
-		hall.check = airplay::GroupCheck::All;
-		hall.displays = {row("R1", "Hall Roku TV", "Fellowship Hall", "G218X", true, "live", airplay::Light::Green),
-				 row("P1", "Hall Panel", "Fellowship Hall", "AppleTV3,2", true, "connecting", airplay::Light::Yellow)};
+		airplay::DisplayGroup meeting;
+		meeting.location = "Meeting Room";
+		meeting.check = airplay::GroupCheck::All;
+		meeting.displays = {row("R1", "Meeting Roku TV", "Meeting Room", "G218X", true, "live", airplay::Light::Green),
+				 row("P1", "Meeting Panel", "Meeting Room", "AppleTV3,2", true, "connecting", airplay::Light::Yellow)};
 		airplay::DisplayGroup lobby;
 		lobby.location = "Lobby";
 		lobby.check = airplay::GroupCheck::None;
 		lobby.displays = {row("L1", "Lobby TV", "Lobby", "AppleTV6,2", false, "", airplay::Light::Gray)};
-		groups_ = {overflow, hall, lobby};
+		groups_ = {overflow, meeting, lobby};
 
 		settings_.global.start_on_launch = true;
 		settings_.global.start_with_streaming = true;
@@ -76,7 +76,8 @@ public:
 		return all;
 	}
 	std::vector<airplay::DisplayGroup> groups() const override { return groups_; }
-	std::vector<std::string> locations() const override { return {"Overflow Room", "Fellowship Hall", "Lobby"}; }
+	std::vector<std::string> locations() const override { return {"Overflow Room", "Meeting Room", "Lobby"}; }
+	std::vector<std::string> scene_names() const override { return {"Main", "Slides"}; }
 	const airplay::Settings &settings() const override { return settings_; }
 	bool running() const override { return true; }
 	std::string status_text() const override
@@ -85,8 +86,8 @@ public:
 		       "Helper: running\n"
 		       "Front TV: TV delay 180 ms (Auto raise only); no audio loss in the last minute\n"
 		       "Back TV: TV delay 180 ms (Auto raise only); no audio loss in the last minute\n"
-		       "Hall Roku TV: TV delay 225 ms (Auto raise only), Wi-Fi; no audio loss in the last minute\n"
-		       "Hall Panel: TV delay 110 ms (auto)";
+		       "Meeting Roku TV: TV delay 225 ms (Auto raise only), Wi-Fi; no audio loss in the last minute\n"
+		       "Meeting Panel: TV delay 110 ms (auto)";
 	}
 	std::vector<std::string> available_encoders() const override
 	{
