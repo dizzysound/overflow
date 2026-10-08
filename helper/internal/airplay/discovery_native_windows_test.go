@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// failOrSkipInCI fails locally (the church PC must not hide a broken API) but
+// failOrSkipInCI fails locally (the streaming PC must not hide a broken API) but
 // skips on GitHub's windows-latest runner, a server SKU with no receivers
 // where the DNS-SD service may be absent.
 func failOrSkipInCI(t *testing.T, format string, args ...any) {

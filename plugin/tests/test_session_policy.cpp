@@ -124,7 +124,7 @@ TEST_CASE("idle: after the output stops")
 TEST_CASE("selection_for maps display settings to set_displays entries")
 {
 	Settings s;
-	DisplaySettings &a = s.ensure_display("A", "Narthex");
+	DisplaySettings &a = s.ensure_display("A", "Lobby");
 	a.enabled = true;
 	a.auto_reconnect = false;
 	a.volume_db = -10.0;
@@ -145,10 +145,10 @@ TEST_CASE("selection_for maps display settings to set_displays entries")
 TEST_CASE("selection_for copies audio_enabled into the selection's audio field")
 {
 	Settings s;
-	DisplaySettings &a = s.ensure_display("A", "Narthex");
+	DisplaySettings &a = s.ensure_display("A", "Lobby");
 	a.enabled = true;
 	a.audio_enabled = false;
-	DisplaySettings &b = s.ensure_display("B", "Sanctuary");
+	DisplaySettings &b = s.ensure_display("B", "Main Room");
 	b.enabled = true; // audio_enabled defaults to true
 	IdleInputs in;
 	in.output_running = true;
@@ -166,7 +166,7 @@ TEST_CASE("selection_for copies wifi_tolerant into the selection")
 	DisplaySettings &a = s.ensure_display("A", "Roku");
 	a.enabled = true;
 	a.wifi_tolerant = true;
-	DisplaySettings &b = s.ensure_display("B", "Sanctuary");
+	DisplaySettings &b = s.ensure_display("B", "Main Room");
 	b.enabled = true; // wifi_tolerant defaults to false
 	IdleInputs in;
 	in.output_running = true;
@@ -181,7 +181,7 @@ TEST_CASE("selection_for copies wifi_tolerant into the selection")
 TEST_CASE("selection_for carries each display's lead")
 {
 	Settings s;
-	DisplaySettings &d = s.ensure_display("AA", "Sacristy");
+	DisplaySettings &d = s.ensure_display("AA", "Studio");
 	d.enabled = true;
 	d.idle_policy = IdlePolicy::StayConnected;
 	IdleInputs in;
@@ -208,14 +208,14 @@ TEST_CASE("selection_for copies audio_format into the selection")
 TEST_CASE("scene skip: a display drops on its skipped scenes only, whatever the idle policy")
 {
 	DisplaySettings r = display(IdlePolicy::StayConnected);
-	r.skip_scenes = {"Narthex Wide"};
+	r.skip_scenes = {"Lobby Wide"};
 	IdleInputs in;
 	in.output_running = true;
 	in.ever_started = true;
 	in.obs_busy = true;
-	in.program_scene = "Pulpit";
+	in.program_scene = "Stage";
 	CHECK(display_wanted(r, in));
-	in.program_scene = "Narthex Wide";
+	in.program_scene = "Lobby Wide";
 	CHECK_FALSE(display_wanted(r, in));
 	CHECK(display_wanted(display(IdlePolicy::StayConnected), in)); // other displays stay
 	in.program_scene.clear(); // unknown scene: never skips
@@ -258,7 +258,7 @@ TEST_CASE("scene skip: rows of enabled skipped displays read off on this scene")
 	g.displays = {a, b};
 	std::vector<DisplayGroup> groups = {g};
 
-	mark_scene_skips(groups, s, "Pulpit");
+	mark_scene_skips(groups, s, "Stage");
 	CHECK(groups[0].displays[0].state == "idle");
 	mark_scene_skips(groups, s, "Wide");
 	CHECK(groups[0].displays[0].state == "off on this scene");

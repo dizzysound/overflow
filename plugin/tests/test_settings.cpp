@@ -29,8 +29,8 @@ Settings sample()
 	s.global.timing = TimingMode::Ntp;
 	s.global.eld_encoder = false;
 	s.global.verbose_helper_log = true;
-	DisplaySettings &a = s.ensure_display("9E:B8:AE:9A:2A:CF", "Sacristy");
-	a.location = "Sacristy";
+	DisplaySettings &a = s.ensure_display("9E:B8:AE:9A:2A:CF", "Studio");
+	a.location = "Studio";
 	a.enabled = true;
 	a.audio_enabled = false;
 	a.volume_db = -12.5;
@@ -195,11 +195,11 @@ TEST_CASE("unknown quality preset strings fall back to the default silently")
 TEST_CASE("location is optional and round-trips")
 {
 	Settings s;
-	s.ensure_display("A", "Left TV").location = "Friendship Hall";
+	s.ensure_display("A", "Left TV").location = "Meeting Room";
 	s.ensure_display("B", "Lobby TV");
 	std::string warning;
 	const Settings back = settings_from_json(settings_to_json(s), &warning);
-	CHECK(back.displays[0].location == "Friendship Hall");
+	CHECK(back.displays[0].location == "Meeting Room");
 	CHECK(back.displays[1].location.empty());
 	const Settings old = settings_from_json(R"({"displays":[{"device_id":"C"}]})", &warning);
 	CHECK(old.displays[0].location.empty());
@@ -262,11 +262,11 @@ TEST_CASE("find, ensure and remove displays")
 {
 	Settings s;
 	CHECK(s.find_display("A") == nullptr);
-	DisplaySettings &a = s.ensure_display("A", "Narthex");
-	CHECK(a.display_name == "Narthex");
+	DisplaySettings &a = s.ensure_display("A", "Lobby");
+	CHECK(a.display_name == "Lobby");
 	s.ensure_display("A", "ignored").enabled = true;
 	REQUIRE(s.displays.size() == 1);
-	CHECK(s.displays[0].display_name == "Narthex");
+	CHECK(s.displays[0].display_name == "Lobby");
 	CHECK(s.displays[0].enabled);
 	CHECK(s.remove_display("A"));
 	CHECK_FALSE(s.remove_display("A"));
@@ -382,7 +382,7 @@ TEST_CASE("Minor 5: an unparsable settings.json is moved aside as .bad, not sile
 TEST_CASE("display latency fields round-trip and default to 0")
 {
 	Settings s;
-	DisplaySettings &d = s.ensure_display("AA", "Sacristy");
+	DisplaySettings &d = s.ensure_display("AA", "Studio");
 	d.latency_ms = 120;
 	d.video_need_ms = 33;
 	d.last_run_p99_ms = 29;
@@ -435,7 +435,7 @@ TEST_CASE("audio_format round-trips, defaults to Auto, and drops unknown values"
 {
 	Settings s;
 	s.ensure_display("A", "Roku").audio_format = "aac-eld";
-	s.ensure_display("B", "Sacristy");
+	s.ensure_display("B", "Studio");
 	std::string warning;
 	const Settings back = settings_from_json(settings_to_json(s), &warning);
 	REQUIRE(back.displays.size() == 2);
@@ -478,12 +478,12 @@ TEST_CASE("settings: lead mode and saved lead round-trip; late floor migrates to
 TEST_CASE("skip_scenes round-trips, defaults empty, drops bad entries, and counts in operator==")
 {
 	Settings s;
-	s.ensure_display("A", "Narthex").skip_scenes = {"Narthex Wide", "Baptism"};
-	s.ensure_display("B", "Sacristy");
+	s.ensure_display("A", "Lobby").skip_scenes = {"Lobby Wide", "Intro"};
+	s.ensure_display("B", "Studio");
 	std::string warning;
 	const Settings back = settings_from_json(settings_to_json(s), &warning);
 	REQUIRE(back.displays.size() == 2);
-	CHECK(back.displays[0].skip_scenes == std::vector<std::string>{"Narthex Wide", "Baptism"});
+	CHECK(back.displays[0].skip_scenes == std::vector<std::string>{"Lobby Wide", "Intro"});
 	CHECK(back.displays[1].skip_scenes.empty());
 	CHECK(back.displays[0] == s.displays[0]);
 
@@ -492,12 +492,12 @@ TEST_CASE("skip_scenes round-trips, defaults empty, drops bad entries, and count
 	CHECK(other != s.displays[0]);
 
 	const std::string odd = R"({"version":1,"global":{},"displays":[
-		{"device_id":"A","skip_scenes":["Wide", 3, "", "Wide", "Pulpit"]},
+		{"device_id":"A","skip_scenes":["Wide", 3, "", "Wide", "Stage"]},
 		{"device_id":"B","skip_scenes":"Wide"}
 	]})";
 	const Settings cleaned = settings_from_json(odd, &warning);
 	REQUIRE(cleaned.displays.size() == 2);
-	CHECK(cleaned.displays[0].skip_scenes == std::vector<std::string>{"Wide", "Pulpit"});
+	CHECK(cleaned.displays[0].skip_scenes == std::vector<std::string>{"Wide", "Stage"});
 	CHECK(cleaned.displays[1].skip_scenes.empty());
 }
 
@@ -512,8 +512,8 @@ TEST_CASE("merge_dialog_fields copies every dialog field and keeps the rest")
 
 	DisplaySettings edited;
 	edited.device_id = "aa:bb";
-	edited.display_name = "Narthex";
-	edited.location = "Friendship Hall";
+	edited.display_name = "Lobby";
+	edited.location = "Meeting Room";
 	edited.enabled = false;
 	edited.auto_reconnect = false;
 	edited.audio_enabled = false;
@@ -526,13 +526,13 @@ TEST_CASE("merge_dialog_fields copies every dialog field and keeps the rest")
 	edited.manual_port = 7100;
 	edited.idle_policy = IdlePolicy::StayConnected;
 	edited.idle_minutes = 5;
-	edited.skip_scenes = {"Narthex Wide"};
+	edited.skip_scenes = {"Lobby Wide"};
 	edited.password_protected = "";
 
 	merge_dialog_fields(target, edited);
 
-	CHECK(target.display_name == "Narthex");
-	CHECK(target.location == "Friendship Hall");
+	CHECK(target.display_name == "Lobby");
+	CHECK(target.location == "Meeting Room");
 	CHECK_FALSE(target.auto_reconnect);
 	CHECK_FALSE(target.audio_enabled);
 	CHECK(target.wifi_tolerant);
@@ -544,7 +544,7 @@ TEST_CASE("merge_dialog_fields copies every dialog field and keeps the rest")
 	CHECK(target.manual_port == 7100);
 	CHECK(target.idle_policy == IdlePolicy::StayConnected);
 	CHECK(target.idle_minutes == 5);
-	CHECK(target.skip_scenes == std::vector<std::string>{"Narthex Wide"});
+	CHECK(target.skip_scenes == std::vector<std::string>{"Lobby Wide"});
 
 	CHECK(target.device_id == "AA:BB");
 	CHECK(target.enabled);

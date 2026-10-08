@@ -95,7 +95,7 @@ func Run(ctx context.Context, cfg Config, in io.Reader, out io.Writer) error {
 		VideoKey:    cfg.VideoKey,
 		SetVolume:   cfg.SetVolume,
 		VolumeDB:    cfg.VolumeDB,
-		// A church PC's shared UDP 5353 (Bonjour, Windows Dnscache, ScreensConnect,
+		// A streaming PC's shared UDP 5353 (Bonjour, Windows Dnscache, ScreensConnect,
 		// node, vMix all bound to it) delivers mDNS replies to the helper only
 		// intermittently, so the daemon's 30s default TTL flapped devices in and
 		// out. Give the embedded bridge more slack between sightings.

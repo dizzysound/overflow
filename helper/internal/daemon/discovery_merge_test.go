@@ -16,7 +16,7 @@ import (
 
 func completeDevice(ip string) airplay.AirPlayDevice {
 	return airplay.AirPlayDevice{
-		Name:     "Friendship",
+		Name:     "Gallery",
 		IP:       ip,
 		Port:     7000,
 		Model:    "AppleTV3,2",

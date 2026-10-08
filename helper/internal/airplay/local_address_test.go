@@ -15,8 +15,8 @@ func mustCIDR(t *testing.T, s string) *net.IPNet {
 }
 
 func TestPreferLocalAddressSameSubnetPreferred(t *testing.T) {
-	// The field report: a receiver advertises 10.20.0.164 (the church
-	// CameraAV network, where the sender is 10.20.0.120/24) and
+	// The field report: a receiver advertises 10.20.0.164 (the venue
+	// camera network, where the sender is 10.20.0.120/24) and
 	// 192.168.1.168 (a second interface with no local route). The
 	// same-subnet address must win regardless of advertised order.
 	local := []*net.IPNet{mustCIDR(t, "10.20.0.0/24")}

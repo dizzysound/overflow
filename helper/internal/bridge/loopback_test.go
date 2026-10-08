@@ -217,7 +217,7 @@ func TestLoopbackPINPairingStreamsVideoAndAudio(t *testing.T) {
 	defer cancel()
 	srv, dev := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthPIN, Code: "1234",
-		Name: "Narthex", DeviceID: "AA:BB:CC:DD:EE:01",
+		Name: "Lobby", DeviceID: "AA:BB:CC:DD:EE:01",
 	})
 	h := startHarness(t, ctx, []bridge.Device{dev})
 	h.command(t, bridge.Command{Cmd: "set_rooms", Rooms: []bridge.RoomSelection{{DeviceID: dev.DeviceID, AutoReconnect: true}}})
@@ -245,13 +245,13 @@ func TestLoopbackRokuPasswordStreams(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	srv, dev := startReceiver(t, ctx, airplay.ReceiverConfig{
-		Profile: airplay.ReceiverProfileRoku, Auth: airplay.ReceiverAuthCombined, Code: "sacristy",
-		Name: "Sacristy", DeviceID: "AA:BB:CC:DD:EE:02",
+		Profile: airplay.ReceiverProfileRoku, Auth: airplay.ReceiverAuthCombined, Code: "studio",
+		Name: "Studio", DeviceID: "AA:BB:CC:DD:EE:02",
 	})
 	h := startHarness(t, ctx, []bridge.Device{dev})
 	h.command(t, bridge.Command{Cmd: "set_rooms", Rooms: []bridge.RoomSelection{{DeviceID: dev.DeviceID, AutoReconnect: true}}})
 
-	h.waitLiveAnswering(t, dev.DeviceID, "password", "sacristy", 30*time.Second)
+	h.waitLiveAnswering(t, dev.DeviceID, "password", "studio", 30*time.Second)
 	waitMedia(t, srv)
 }
 
@@ -260,7 +260,7 @@ func TestLoopbackReceiverLossRetries(t *testing.T) {
 	defer cancel()
 	srv, dev := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthNone,
-		Name: "Friendship", DeviceID: "AA:BB:CC:DD:EE:03",
+		Name: "Gallery", DeviceID: "AA:BB:CC:DD:EE:03",
 	})
 	h := startHarness(t, ctx, []bridge.Device{dev})
 	h.command(t, bridge.Command{Cmd: "set_rooms", Rooms: []bridge.RoomSelection{{DeviceID: dev.DeviceID, AutoReconnect: true}}})
@@ -278,14 +278,14 @@ func TestLoopbackTwoRoomsIsolated(t *testing.T) {
 	defer cancel()
 	srvB, devB, err := listenReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthNone,
-		Name: "Fellowship", DeviceID: "AA:BB:CC:DD:EE:05",
+		Name: "Atrium", DeviceID: "AA:BB:CC:DD:EE:05",
 	}, "127.0.0.2")
 	if err != nil {
 		t.Skipf("cannot bind 127.0.0.2 (%v); on macOS enable it with: sudo ifconfig lo0 alias 127.0.0.2", err)
 	}
 	srvA, devA := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthNone,
-		Name: "Nave", DeviceID: "AA:BB:CC:DD:EE:04",
+		Name: "Annex", DeviceID: "AA:BB:CC:DD:EE:04",
 	})
 	h := startHarness(t, ctx, []bridge.Device{devA, devB})
 	h.command(t, bridge.Command{Cmd: "set_rooms", Rooms: []bridge.RoomSelection{

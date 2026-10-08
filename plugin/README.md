@@ -133,7 +133,7 @@ Overflow was called obs-airplay. To upgrade:
 ## Use
 
 - Check the displays you want and press **Start**. Give displays a location (for example
-  "Friendship Hall") in **Display settings** to group them; a location's checkbox selects or
+  "Meeting Room") in **Display settings** to group them; a location's checkbox selects or
   deselects all of its displays. The first time, an Apple TV or Roku shows a
   code on screen; type it into the prompt. Pairing is remembered.
 - A green light means live; yellow is connecting, waiting for a code, or retrying; red means

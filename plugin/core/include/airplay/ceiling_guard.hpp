@@ -79,7 +79,7 @@ int reconnect_lead_ms(int wanted_ms, int need_ms);
 // The audio buffering OBS added lasts until OBS restarts, so a reconnect's
 // lead must hold for the rest of the run but must never be saved as the next
 // run's starting lead: Auto lowers a saved lead by only 10 ms a session, so
-// next Sunday would open the display at this run's lead for nothing
+// the next run would open the display at this run's lead for nothing
 // (2026-10-04: a saved 197 ms would have become about 440 ms).
 class RunLeads {
 public:
@@ -99,7 +99,7 @@ private:
 	std::map<std::string, int> leads_;
 };
 
-// Dock and log text for a display in the warning state, e.g. "Narthex: audio
+// Dock and log text for a display in the warning state, e.g. "Lobby: audio
 // dropped late: needs about 400 ms, above this display's most TV delay of 297
 // ms. Reconnecting it with a higher TV delay."
 std::string ceiling_warning_text(const std::string &display_name, const CeilingGuard &guard, bool fixed);

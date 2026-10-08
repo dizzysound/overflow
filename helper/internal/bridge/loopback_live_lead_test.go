@@ -38,7 +38,7 @@ func TestLoopbackSetLeadAndReadyCapability(t *testing.T) {
 	defer cancel()
 	_, dev := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthNone,
-		Name: "Nave", DeviceID: "AA:BB:CC:DD:EE:41",
+		Name: "Annex", DeviceID: "AA:BB:CC:DD:EE:41",
 	})
 	h := startHarness(t, ctx, []bridge.Device{dev})
 

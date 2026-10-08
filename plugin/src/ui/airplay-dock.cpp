@@ -97,7 +97,7 @@ QString state_text(const airplay::DisplayRow &row)
 QString display_tooltip(const airplay::DisplayRow &row)
 {
 	// Leads with the full display name: the Display column elides long names
-	// (for example "Sanctuary Center Screen" as "Sanctu...") once it is
+	// (for example "Main Room Center Screen" as "Main R...") once it is
 	// narrower than the text, and this is the only place the whole name
 	// still shows.
 	QString tip = QString::fromStdString(row.display_name);

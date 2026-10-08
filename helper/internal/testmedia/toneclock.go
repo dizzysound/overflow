@@ -46,7 +46,7 @@ func (c *ToneClock) Due(now time.Time) []ToneBlock {
 }
 
 // FrameClock paces test video by elapsed time at an exact, possibly
-// fractional, frame rate (59.94 = 60000/1001, as OBS runs at the church). A
+// fractional, frame rate (59.94 = 60000/1001, as OBS runs on the streaming PC). A
 // ticker's period is rounded to whole nanoseconds and it drops ticks under
 // load; the frame index sets each capture offset instead, so a receiver sees
 // the nominal rate exactly.

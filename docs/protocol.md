@@ -348,7 +348,7 @@ offset (revision 1.5). Video and audio must use the same clock.
 
 ```json
 {"event":"ready","version":1,"capabilities":["live_lead"]}
-{"event":"devices","devices":[{"device_id":"...","name":"Narthex","model":"AppleTV14,1","ip":"10.0.0.5","port":7000}]}
+{"event":"devices","devices":[{"device_id":"...","name":"Lobby","model":"AppleTV14,1","ip":"10.0.0.5","port":7000}]}
 {"event":"display","device_id":"...","state":"live"}
 {"event":"display","device_id":"...","state":"live","audio":"off","audio_reason":"receiver only accepts AAC-ELD audio, which this build cannot encode"}
 {"event":"display","device_id":"...","state":"credential","credential_kind":"pin"}
