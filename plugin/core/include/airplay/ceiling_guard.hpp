@@ -79,7 +79,7 @@ int reconnect_lead_ms(int wanted_ms, int need_ms);
 // The audio buffering OBS added lasts until OBS restarts, so a reconnect's
 // lead must hold for the rest of the run but must never be saved as the next
 // run's starting lead: Auto lowers a saved lead by only 10 ms a session, so
-// next Sunday would open the display at this run's lead for nothing
+// the next run would open the display at this run's lead for nothing
 // (2026-10-04: a saved 197 ms would have become about 440 ms).
 class RunLeads {
 public:

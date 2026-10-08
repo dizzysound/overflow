@@ -17,7 +17,7 @@ func TestLoopbackSetDisplaysEmitsDisplayEvents(t *testing.T) {
 	defer cancel()
 	srv, dev := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthNone,
-		Name: "Nave", DeviceID: "AA:BB:CC:DD:EE:20",
+		Name: "Annex", DeviceID: "AA:BB:CC:DD:EE:20",
 	})
 	h := startHarness(t, ctx, []bridge.Device{dev})
 	h.command(t, bridge.Command{Cmd: "set_displays", Displays: []bridge.RoomSelection{{DeviceID: dev.DeviceID, AutoReconnect: true}}})

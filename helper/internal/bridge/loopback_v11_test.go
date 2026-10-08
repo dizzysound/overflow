@@ -29,7 +29,7 @@ func TestLoopbackRoomVolume(t *testing.T) {
 	defer cancel()
 	srv, dev := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthNone,
-		Name: "Nave", DeviceID: "AA:BB:CC:DD:EE:11",
+		Name: "Annex", DeviceID: "AA:BB:CC:DD:EE:11",
 	})
 	h := startHarness(t, ctx, []bridge.Device{dev})
 	start := -12.0

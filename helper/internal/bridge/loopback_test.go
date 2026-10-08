@@ -285,7 +285,7 @@ func TestLoopbackTwoRoomsIsolated(t *testing.T) {
 	}
 	srvA, devA := startReceiver(t, ctx, airplay.ReceiverConfig{
 		Profile: airplay.ReceiverProfileModern, Auth: airplay.ReceiverAuthNone,
-		Name: "Nave", DeviceID: "AA:BB:CC:DD:EE:04",
+		Name: "Annex", DeviceID: "AA:BB:CC:DD:EE:04",
 	})
 	h := startHarness(t, ctx, []bridge.Device{devA, devB})
 	h.command(t, bridge.Command{Cmd: "set_rooms", Rooms: []bridge.RoomSelection{

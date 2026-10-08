@@ -85,7 +85,7 @@ TEST_CASE("RunLeads: a reconnect lead never becomes the next run's start")
 		if (!leads.holds(kLobby))
 			saved = reconnect;
 	}
-	CHECK(saved == 210); // next Sunday still opens at the pre-jump lead
+	CHECK(saved == 210); // the next run still opens at the pre-jump lead
 
 	// OBS restarts, dropping its buffering: a fresh RunLeads, saved lead intact.
 	const RunLeads next_run;

@@ -547,7 +547,7 @@ bool Controller::guard_ceiling(airplay::DisplaySettings &d, const airplay::Deliv
 		    " ms; reconnect " + std::to_string(guard.reconnects()) + " of " +
 		    std::to_string(airplay::CeilingGuard::kMaxReconnects) + " this run)");
 	// The new session and any reconnect later in this OBS run start here
-	// (lead_for). Not saved_lead_ms: that would start next Sunday's run at
+	// (lead_for). Not saved_lead_ms: that would start the next run at
 	// this lead after OBS has dropped the buffering, and Auto raise only
 	// lowers a saved lead by just 10 ms a session (2026-10-04: 297 -> ~440).
 	run_leads_.set(d.device_id, step.reconnect_ms);
