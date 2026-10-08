@@ -5,12 +5,15 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-08
+
 ### Fixed
 
 - A TV delay raised by a ceiling reconnect now holds only until OBS closes, which is when OBS drops
   the audio buffering that caused it. It was kept as that display's starting delay for the next
   time, and Auto lowers a saved delay by only 10 ms a session, so a service that hit the ceiling
   once would have opened that display hundreds of milliseconds late for weeks afterwards.
+  (Covered by a test; not yet seen in a live OBS reconnect.)
 
 ## [0.2.0] - 2026-10-04
 
