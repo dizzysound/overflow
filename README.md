@@ -2,16 +2,13 @@
 
 **Send your OBS program output to the TVs in other rooms, several at once, over AirPlay.**
 
-![One OBS PC sends its program to AirPlay TVs in an overflow room, a fellowship hall and a lobby](docs/images/overview.svg)
+![One OBS PC sends its program to AirPlay TVs in an overflow room, a meeting room and a lobby](docs/images/overview.svg)
 
-Overflow is an OBS Studio plugin for overflow rooms, lobbies, cry rooms, fellowship halls, and any
+Overflow is an OBS Studio plugin for overflow rooms, lobbies, meeting rooms, and any
 other place that needs to see and hear what's happening in the main room. It encodes the OBS program
 (video and audio) once and plays it on Apple TVs, Roku TVs and other AirPlay receivers, all at the
 same time. You need no capture cards, HDMI runs or second computer, and your live stream and
 recording are not affected.
-
-It was built for a church that streams its services with OBS and needed the same picture and sound
-on TVs in three other rooms.
 
 ## Screenshots
 
@@ -66,10 +63,11 @@ Some receivers accept only AAC-ELD audio; Overflow includes an AAC-ELD encoder f
   - Windows 10 or 11, 64-bit.
   - macOS 13 or later, Apple silicon or Intel.
   - Linux x86_64 (built on Ubuntu 24.04 against OBS from the OBS PPA; tests pass and it loads in
-    OBS, but it has had only a short receiver test on a slow headless machine).
+    OBS; one receiver session delivered picture and sound, on a low-power host with a reduced
+    frame rate).
 - The computer and the receivers on the same network, or receivers added by IP address.
 
-The Windows build runs at the church Overflow was written for. The macOS and Linux builds are new;
+The Windows build is in production use. The macOS and Linux builds are newer;
 [`plugin/README.md`](plugin/README.md) says what has been tested on each.
 
 ## Install
@@ -122,7 +120,7 @@ Bug reports, receiver compatibility reports and pull requests are welcome. See
 
 Most of Overflow's own code, tests and documentation were written with Claude Code, Anthropic's AI
 coding tool, working from my requirements and design decisions. Automated tests cover the plugin
-logic and the helper, and the builds that run at the church were tested there on real receivers. The
+logic and the helper, and the Windows builds in production use were tested on real receivers. The
 AirPlay sender it builds on, doubletake, is a separate upstream project and isn't covered by this
 note. Please judge the code on its merits, and report problems through the issue forms.
 

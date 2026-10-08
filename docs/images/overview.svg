@@ -34,7 +34,7 @@
     <rect x="540" y="118" width="308" height="64" rx="10" fill="#2c303b"/>
     <rect x="556" y="132" width="52" height="34" rx="4" fill="#11131a" stroke="#5a5e6b"/>
     <circle cx="582" cy="149" r="5" fill="#3fbf5f"/>
-    <text x="624" y="146" font-size="16" font-weight="700" fill="#ffffff">Fellowship Hall</text>
+    <text x="624" y="146" font-size="16" font-weight="700" fill="#ffffff">Meeting Room</text>
     <text x="624" y="167" font-size="13" fill="#c9ccd6">Roku TV</text>
   </g>
   <g>
